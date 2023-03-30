@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/jointjs/3.6.2/joint.css" />
+    <style>
+        .paper-container {
+            overflow: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- content -->
+    <div class="canvasContainer">
+        <div id="myholder"></div>
+    </div>
+
+    <!-- dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.1/jquery.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/backbone.js/1.4.1/backbone.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jointjs/3.6.5/joint.js"></script>
+
+    <!-- code -->
+    <script type="text/javascript">
+
+        function renderGraph(jsonResponse) {
+
+            var namespace = joint.shapes;
+
+            var graph = new joint.dia.Graph({}, { cellNamespace: namespace });
+
+            const maxWidth = window.innerWidth;
+            const parentHeight = window.innerHeight;
+
+            var paper = new joint.dia.Paper({
+                el: document.getElementById('myholder'),
+                model: graph,
+                width: maxWidth + 'px',
+                height: parentHeight + 'px',
+                gridSize: 1,
+                cellViewNamespace: namespace,
+                fitToContent: true
+            });
+
+
+            // Making process boxes
+
+            for (let process = 0; process < 8; process++) {
+
+                var rect = new joint.shapes.standard.Rectangle();
+                rect.position(100, 30 + 100 * process);
+                rect.resize(50, 50);
+                rect.attr({
+                    body: {
+                        fill: 'blue'
+                    },
+                    label: {
+                        text: 'P' + process,
+                        fill: 'white'
+                    }
+                });
+                rect.addTo(graph);
+
+                const pageWidth = new joint.g.Point({ x: document.documentElement.clientWidth, y: 0 }).x;
+                const midX = rect.getBBox().center().x;
+                const endPoint = { x: pageWidth, y: rect.getBBox().center().y };
+
+                const horizontalLine = new joint.dia.Link({
+                    source: { id: rect.id },
+                    target: { x: endPoint.x, y: endPoint.y },
+                    vertices: [
+                        { x: midX + 25, y: rect.getBBox().center().y },
+                        { x: endPoint.x + 25, y: rect.getBBox().center().y }
+                    ]
+                });
+
+                graph.addCell(horizontalLine);
+
+            }
+
+            for (let key in jsonResponse) {
+
+                for (let event in jsonResponse[key]['events']) {
+
+                    var process_send = jsonResponse[key]['events'][event]['process_send']
+                    var process_recv = jsonResponse[key]['events'][event]['process_recv']
+                    var failure = jsonResponse[key]['events'][event]['failure']
+                    var msg = jsonResponse[key]['events'][event]['msg']
+                    var type = jsonResponse[key]['events'][event]['type']
+                    var time = key
+
+                    if(failure) {
+                        color = 'red'
+                    }
+                    else {
+                        color = 'white'
+                    }
+
+                    console.log(process_send + ' to ' + process_recv + ' at time ' + time);
+
+                    if (process_send != process_recv) {
+                        var link = new joint.dia.Link({
+                            source: { x: 225 * (time - 1), y: 55 + (100 * process_send) },
+                            target: { x: 225 * time, y: 55 + (100 * process_recv) },
+                            attrs: {
+                                '.connection': { stroke: 'black', 'stroke-width': 2 },
+                                '.marker-target': { d: 'M 10 0 L 0 5 L 10 10 z' },
+                                '.marker-target-overflow': { 'x': 0, 'y': 0 },
+                            },
+                            labels: [
+                                {
+                                    position: 0.5, // Position the label at the midpoint of the link
+                                    attrs: {
+                                        text: {
+                                            text: msg, // The text to display
+                                            fill: 'black', // The color of the text
+                                            'font-size': 14, // The font size of the text
+                                            'font-weight': 'bold', // The font weight of the text
+                                            'text-anchor': 'middle', // Center the text horizontally
+                                            'y-alignment': 'middle', // Center the text vertically
+                                        },
+                                        rect: {
+                                            fill: color, // The background color of the label
+                                            rx: 5, // The corner radius of the label
+                                            ry: 5,
+                                            stroke: 'black', // The border color of the label
+                                            'stroke-width': 1, // The border width of the label
+                                        }
+                                    }
+                                }
+                            ]
+                        });
+                        paper.model.addCell(link);
+                    }
+
+
+
+                }
+
+            }
+
+        }
+
+        function parseJSON() {
+
+            const xhr = new XMLHttpRequest();
+
+            xhr.open('GET', '/data', true);
+
+            xhr.responseType = 'json';
+
+            xhr.onload = function () {
+
+                if (xhr.readyState == xhr.DONE && xhr.status == 200) {
+
+                    renderGraph(xhr.response);
+
+                }
+
+            };
+
+            xhr.setRequestHeader('Access-Control-Allow-Origin', '*');
+            xhr.setRequestHeader('Access-Control-Allow-Headers', '*');
+            xhr.setRequestHeader('Access-Control-Allow-Methods', '*');
+
+            xhr.send();
+
+        }
+
+        // setInterval(parseJSON, 5000);
+        parseJSON()
+
+
+
+    </script>
+</body>
+
+</html>
