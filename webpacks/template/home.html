@@ -7,9 +7,54 @@
         #paper-container {
             width: 100%;
             height: 800px;
-            overflow: scroll; /* or "scroll" */
+            overflow: scroll;
+            /* or "scroll" */
             border: 1px solid black;
-            }
+        }
+
+        #paper-container::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        #paper-container::-webkit-scrollbar-thumb {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+
+        #paper-container::-webkit-scrollbar-track {
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+        #process-container {
+            width: 100%;
+            height: 800px;
+            overflow: scroll;
+            /* or "scroll" */
+            border: 1px solid black;
+            display: none;
+        }
+
+        #process-container::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        #process-container::-webkit-scrollbar-thumb {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+
+        #process-container::-webkit-scrollbar-track {
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+        #process-container {
+            width: 100%;
+            height: 800px;
+            overflow: scroll;
+            /* or "scroll" */
+            border: 1px solid black;
+            display: none;
+        }
     </style>
 </head>
 
@@ -18,140 +63,22 @@
     <div id="paper-container">
         <div id="paper"></div>
     </div>
-    <div id="processLog"></div>
+    <button id="toggle-button">Process View</button>
+    <div id="process-container">
+        <div id="procpaper"></div>
+        <div id="processLog"></div>
+    </div>
+    
 
     <!-- dependencies -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.1/jquery.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/backbone.js/1.4.1/backbone.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jointjs/3.6.5/joint.js"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='js/chart.js') }}"></script>
 
     <!-- code -->
     <script type="text/javascript">
-
-        function renderGraph(jsonResponse) {
-
-            var namespace = joint.shapes;
-
-            var graph = new joint.dia.Graph({}, { cellNamespace: namespace });
-
-            const container = document.getElementById("paper-container");
-            const paperWidth = container.clientWidth;
-            const paperHeight = container.clientHeight;
-
-
-            var paper = new joint.dia.Paper({
-                el: container,
-                model: graph,
-                width: paperWidth,
-                height: paperHeight,
-                gridSize: 10,
-                cellViewNamespace: namespace,
-                fitToContent: true
-            });
-            
-            paper.model.on("change:size", function() {
-            const newWidth = paper.model.get("size").width + 100;
-            const newHeight = paper.model.get("size").height + 100;
-            paper.setDimensions(newWidth, newHeight);
-            });
-
-
-            // Making process boxes
-
-            for (let process = 0; process < 8; process++) {
-
-                var rect = new joint.shapes.standard.Rectangle();
-                rect.position(100, 30 + 100 * process);
-                rect.resize(50, 50);
-                rect.attr({
-                    body: {
-                        fill: 'blue'
-                    },
-                    label: {
-                        text: 'P' + process,
-                        fill: 'white'
-                    }
-                });
-                rect.addTo(graph);
-
-                const pageWidth = new joint.g.Point({ x: document.documentElement.clientWidth, y: 0 }).x;
-                const midX = rect.getBBox().center().x;
-                const endPoint = { x: pageWidth, y: rect.getBBox().center().y };
-
-                const horizontalLine = new joint.dia.Link({
-                    source: { id: rect.id },
-                    target: { x: endPoint.x, y: endPoint.y },
-                    vertices: [
-                        { x: midX + 25, y: rect.getBBox().center().y },
-                        { x: endPoint.x + 25, y: rect.getBBox().center().y }
-                    ]
-                });
-
-                graph.addCell(horizontalLine);
-
-            }
-
-            jsonResponse.forEach(function(event) {
-
-                var process_send = event.e;
-                var process_recv = event.f;
-                var failure = event.failure;
-                var msg = event.msg;
-                var send_clock = event['e.clock'];
-                var recv_clock = event['f.clock'];
-                var send_time = send_clock[process_send];
-                var recv_time = recv_clock[process_recv];
-
-                if(failure) {
-                    color = 'red'
-                }
-                else {
-                    color = 'white'
-                }
-
-                process_log = document.getElementById('processLog');
-                process_log.textContent += "\nEvent logged: " + process_send + ' to ' + process_recv;
-
-                if (process_send != process_recv) {
-                    var link = new joint.dia.Link({
-                        source: { x: 225 * (send_time + 1), y: 55 + (100 * process_send) },
-                        target: { x: 225 * (recv_time + 1), y: 55 + (100 * process_recv) },
-                        attrs: {
-                            '.connection': { stroke: 'black', 'stroke-width': 2 },
-                            '.marker-target': { d: 'M 10 0 L 0 5 L 10 10 z' },
-                            '.marker-target-overflow': { 'x': 0, 'y': 0 },
-                        },
-                        labels: [
-                            {
-                                position: 0.5, // Position the label at the midpoint of the link
-                                attrs: {
-                                    text: {
-                                        text: msg, // The text to display
-                                        fill: 'black', // The color of the text
-                                        'font-size': 14, // The font size of the text
-                                        'font-weight': 'bold', // The font weight of the text
-                                        'text-anchor': 'middle', // Center the text horizontally
-                                        'y-alignment': 'middle', // Center the text vertically
-                                    },
-                                    rect: {
-                                        fill: color, // The background color of the label
-                                        rx: 5, // The corner radius of the label
-                                        ry: 5,
-                                        stroke: 'black', // The border color of the label
-                                        'stroke-width': 1, // The border width of the label
-                                    }
-                                }
-                            }
-                        ]
-                    });
-                    paper.model.addCell(link);
-                }
-
-                
-            });
-
-        }
 
         function parseJSON() {
 

@@ -1,6 +1,7 @@
 from flask import Flask, render_template, jsonify
 import pandas as pd
 import json
+import numpy as np
 
 app = Flask(__name__, static_url_path='',
             static_folder='static',
@@ -66,6 +67,7 @@ def generate_trace(csv_file: str):
     df = pd.read_csv(csv_file, names = columns)
     print('File read successful!')
     df['failure'] = 0
+    df.loc[np.random.rand(len(df)) < 0.1, 'failure'] = 1
     df['msg'] = 'Dummy message'
     df['e.clock'] = df.apply(lambda row: find_send_clock(row), axis = 1)
     df['f.clock'] = df.apply(lambda row: find_recv_clock(row), axis = 1)
