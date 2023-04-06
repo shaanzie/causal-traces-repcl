@@ -4,17 +4,21 @@
 <head>
     <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/jointjs/3.6.2/joint.css" />
     <style>
-        .paper-container {
-            overflow: auto;
-        }
+        #paper-container {
+            width: 100%;
+            height: 800px;
+            overflow: scroll; /* or "scroll" */
+            border: 1px solid black;
+            }
     </style>
 </head>
 
 <body>
     <!-- content -->
-    <div class="canvasContainer">
-        <div id="myholder"></div>
+    <div id="paper-container">
+        <div id="paper"></div>
     </div>
+    <div id="processLog"></div>
 
     <!-- dependencies -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.1/jquery.js"></script>
@@ -31,17 +35,25 @@
 
             var graph = new joint.dia.Graph({}, { cellNamespace: namespace });
 
-            const maxWidth = window.innerWidth;
-            const parentHeight = window.innerHeight;
+            const container = document.getElementById("paper-container");
+            const paperWidth = container.clientWidth;
+            const paperHeight = container.clientHeight;
+
 
             var paper = new joint.dia.Paper({
-                el: document.getElementById('myholder'),
+                el: container,
                 model: graph,
-                width: maxWidth + 'px',
-                height: parentHeight + 'px',
-                gridSize: 1,
+                width: paperWidth,
+                height: paperHeight,
+                gridSize: 10,
                 cellViewNamespace: namespace,
                 fitToContent: true
+            });
+            
+            paper.model.on("change:size", function() {
+            const newWidth = paper.model.get("size").width + 100;
+            const newHeight = paper.model.get("size").height + 100;
+            paper.setDimensions(newWidth, newHeight);
             });
 
 
@@ -80,66 +92,64 @@
 
             }
 
-            for (let key in jsonResponse) {
+            jsonResponse.forEach(function(event) {
 
-                for (let event in jsonResponse[key]['events']) {
+                var process_send = event.e;
+                var process_recv = event.f;
+                var failure = event.failure;
+                var msg = event.msg;
+                var send_clock = event['e.clock'];
+                var recv_clock = event['f.clock'];
+                var send_time = send_clock[process_send];
+                var recv_time = recv_clock[process_recv];
 
-                    var process_send = jsonResponse[key]['events'][event]['process_send']
-                    var process_recv = jsonResponse[key]['events'][event]['process_recv']
-                    var failure = jsonResponse[key]['events'][event]['failure']
-                    var msg = jsonResponse[key]['events'][event]['msg']
-                    var type = jsonResponse[key]['events'][event]['type']
-                    var time = key
-
-                    if(failure) {
-                        color = 'red'
-                    }
-                    else {
-                        color = 'white'
-                    }
-
-                    console.log(process_send + ' to ' + process_recv + ' at time ' + time);
-
-                    if (process_send != process_recv) {
-                        var link = new joint.dia.Link({
-                            source: { x: 225 * (time - 1), y: 55 + (100 * process_send) },
-                            target: { x: 225 * time, y: 55 + (100 * process_recv) },
-                            attrs: {
-                                '.connection': { stroke: 'black', 'stroke-width': 2 },
-                                '.marker-target': { d: 'M 10 0 L 0 5 L 10 10 z' },
-                                '.marker-target-overflow': { 'x': 0, 'y': 0 },
-                            },
-                            labels: [
-                                {
-                                    position: 0.5, // Position the label at the midpoint of the link
-                                    attrs: {
-                                        text: {
-                                            text: msg, // The text to display
-                                            fill: 'black', // The color of the text
-                                            'font-size': 14, // The font size of the text
-                                            'font-weight': 'bold', // The font weight of the text
-                                            'text-anchor': 'middle', // Center the text horizontally
-                                            'y-alignment': 'middle', // Center the text vertically
-                                        },
-                                        rect: {
-                                            fill: color, // The background color of the label
-                                            rx: 5, // The corner radius of the label
-                                            ry: 5,
-                                            stroke: 'black', // The border color of the label
-                                            'stroke-width': 1, // The border width of the label
-                                        }
-                                    }
-                                }
-                            ]
-                        });
-                        paper.model.addCell(link);
-                    }
-
-
-
+                if(failure) {
+                    color = 'red'
+                }
+                else {
+                    color = 'white'
                 }
 
-            }
+                process_log = document.getElementById('processLog');
+                process_log.textContent += "\nEvent logged: " + process_send + ' to ' + process_recv;
+
+                if (process_send != process_recv) {
+                    var link = new joint.dia.Link({
+                        source: { x: 225 * (send_time + 1), y: 55 + (100 * process_send) },
+                        target: { x: 225 * (recv_time + 1), y: 55 + (100 * process_recv) },
+                        attrs: {
+                            '.connection': { stroke: 'black', 'stroke-width': 2 },
+                            '.marker-target': { d: 'M 10 0 L 0 5 L 10 10 z' },
+                            '.marker-target-overflow': { 'x': 0, 'y': 0 },
+                        },
+                        labels: [
+                            {
+                                position: 0.5, // Position the label at the midpoint of the link
+                                attrs: {
+                                    text: {
+                                        text: msg, // The text to display
+                                        fill: 'black', // The color of the text
+                                        'font-size': 14, // The font size of the text
+                                        'font-weight': 'bold', // The font weight of the text
+                                        'text-anchor': 'middle', // Center the text horizontally
+                                        'y-alignment': 'middle', // Center the text vertically
+                                    },
+                                    rect: {
+                                        fill: color, // The background color of the label
+                                        rx: 5, // The corner radius of the label
+                                        ry: 5,
+                                        stroke: 'black', // The border color of the label
+                                        'stroke-width': 1, // The border width of the label
+                                    }
+                                }
+                            }
+                        ]
+                    });
+                    paper.model.addCell(link);
+                }
+
+                
+            });
 
         }
 
