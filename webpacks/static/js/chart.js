@@ -13,8 +13,9 @@ function renderGraph(jsonResponse) {
     paper.on('cell:pointerdown', function (cellView) {
         var link = cellView.model.id.split(',')
         var proc_send = link[0];
+        var send_time = link[2];
         console.log(link);
-        make_proc_chart(jsonResponse, proc_send);
+        make_proc_chart(jsonResponse, proc_send, send_time);
     });
 
 }
@@ -37,7 +38,8 @@ function make_blank_chart(container) {
         gridSize: 1,
         cellViewNamespace: namespace,
         padding: 0,
-        fitToContent: false
+        fitToContent: false,
+        autoResize: true
     });
 
     return { graph, paper }
@@ -140,7 +142,7 @@ function make_link(event, paper) {
     }
 }
 
-function make_proc_chart(jsonResponse, proc_send) {
+function make_proc_chart(jsonResponse, proc_send, proc_time) {
 
     const myDiv = document.getElementById('process-container');
     myDiv.style.display = 'block';
@@ -156,9 +158,11 @@ function make_proc_chart(jsonResponse, proc_send) {
         var failure = event.failure;
         var msg = event.msg;
         var send_clock = event['e.clock'];
-        var recv_clock = event['f.clock'];
+        var recv_clock = event['f.clock'];    
+        var send_time = send_clock[proc_send];
+        var recv_time = recv_clock[proc_send];
 
-        if (event.e == proc_send || event.f == proc_send) {
+        if ((event.e == proc_send || event.f == proc_send) && (send_time <= proc_time || recv_time <= proc_time)) {
             make_link(event, paper);
             process_log.innerHTML += "Event logged: process " + event.e + " (" + send_clock + ")" + ' to process ' + event.f + " (" + recv_clock + ")" + " : " + msg;
             if (failure) {
