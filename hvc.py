@@ -1,200 +1,222 @@
-import datetime as dt
-from math import floor
-import random
-from copy import deepcopy
+# Author: Ishaan Lagwankar
+# Month updated: Apr 2023
 
-class HVC: 
+'''
+This imports may not be necessary soon
+Version checking recommended
+'''
+import math
 
-    def __init__(self, times: list, epsilon: int, epoch_interval: int, pid: int, max_procs: int) -> None:
-        
-        self.interval = epoch_interval
-        self.max_epoch = 0
-        self.times = times
+'''
+The HVC (Hybrid Vector Clock) is a vector clock
+that enforces causality in O(number of processes
+not skewed past epsilon) space. It is an improvement
+on the previous implementation of vector clocks and
+uses a process' physical timestamp to enforce causality.
+
+Note: The happens before relation for this HVC is defined as
+e hb f -> for all offsets e.o in e.offsets and all offsets f.o in f.offsets,
+e.o <= f.o and
+there is one e.o such that e.o < f.o for the same PID
+If two clocks are equal, they are concurrent.
+'''
+
+'''
+Initial definition of class object
+We can modularize this down the line but leaving
+this as a single class for now.
+'''
+
+
+class HVC:
+
+    '''
+    Initializes the clock parameters of epsilon, interval, offsets, counters and process ID.
+    For now, this clock at the worst case stores O(n) offsets and counters, but takes must lesser
+    space in practice. We only worry about the average case here.
+    '''
+
+    def __init__(
+        self,
+        interval: int,                  # Epoch interval
+        pid: int,                       # Process ID
+        # Clock skew - Ideally set by the system, but you can choose to set it if you like
+        epsilon: int = math.inf,
+    ) -> None:
+
+        self.interval = interval
+        self.max_epoch = 0              # Epoch of process
         self.epsilon = epsilon
-        self.counters = [0]*max_procs
-        self.offsets = [-epsilon]*max_procs
+        self.counters = dict()
+        self.offsets = dict()
         self.pid = pid
-        self.max_procs = max_procs
-        for idx in range(len(times)):
-            self.offsets[idx] = min(abs(self.max_epoch - times[idx]), epsilon)
+
+        # My offset with respect to me is always 0
         self.offsets[self.pid] = 0
 
-        self.local_event_probability = 1
-
+    '''
+    We need a representation if we ever need to debug this. For now, this seems to work
+    '''
 
     def __repr__(self) -> str:
-        
+
         return 'HVC(clock_pid={pid}, \nmax_epoch={max_epoch}, \ncounters={counters}, \noffsets={offsets}'.format(
-            pid = self.pid,
-            max_epoch = self.max_epoch, 
-            counters = self.counters, 
-            offsets = self.offsets
+            pid=self.pid,
+            max_epoch=self.max_epoch,
+            counters=self.counters,
+            offsets=self.offsets
         )
 
-    def get_offset_size(self) -> str:
+    '''
+    This returns the offset dictionary size
+    '''
 
-        return sum((abs(x) < self.epsilon) for x in self.offsets) - 1
-    
-    def get_counter_size(self) -> str:
-        
-        return sum(x > 0 for x in self.counters)
+    def get_offset_size(
+        self
+    ) -> str:
 
-    def get_perceived_e_drift(self) -> str:
+        return len(self.offsets.keys())
 
-        max_drift = 0
+    '''
+    This returns the counter dictionary size
+    '''
 
-        for pid1 in range(self.max_procs):
-            for pid2 in range(self.max_procs):
-                drift = self.offsets[pid2] - self.offsets[pid1]
-                if abs(drift) < self.epsilon and abs(drift) > max_drift:
-                    max_drift = drift
+    def get_counter_size(
+        self
+    ) -> str:
 
-        return max_drift 
+        return len(self.counters.keys())
 
+    '''
+    This returns the clock as a standard readable vector clock should we need it.
+    This is for debug purposes only. Using this function will slow down your computation.
+    '''
 
-    def as_list(self) -> list:
+    def as_list(
+        self,
+        n_procs: int
+    ) -> list:
 
-        vector_clock = [0]*self.max_procs
-        for pid in range(self.max_procs):
-            vector_clock[pid] = self.max_epoch + self.offsets[pid] + (self.counters[pid] / self.max_procs)
+        vector_clock = [0]*n_procs
+        for pid in range(n_procs):
+            vector_clock[pid] = self.max_epoch + \
+                self.offsets[pid] + self.counters[pid]
         return vector_clock
 
-    def __eq__(self, other: 'HVC') -> bool:
-        return self.as_list() == other.as_list()
+    '''
+    This defines the advance relation, where a clock moves forward by one timestep.
+    '''
 
-    def __ne__(self, other: 'HVC') -> bool:
-        return self.as_list() != other.as_list()
+    def advance(
+        self,
+        # Assuming this to be a UNIX timestamp, but that can change as long as you can represent it in integers
+        phy_clock: int
+    ):
 
-    def __lt__(self, other: 'HVC') -> bool:
-        self_vc = self.as_list()
-        other_vc = other.as_list()
-        for idx in range(self.max_procs):
-            if self_vc[idx] >= other_vc[idx]:
-                return False
+        # Check if the new max epoch has changed by discretizing our clock to fit the interval chosen
+        new_max_epoch = max(
+            self.max_epoch,
+            math.floor(phy_clock / self.interval)
+        )
 
-    def __le__(self, other: 'HVC') -> bool:
-        self_vc = self.as_list()
-        other_vc = other.as_list()
-        for idx in range(self.max_procs):
-            if self_vc[idx] > other_vc[idx]:
-                return False
+        # If our max epoch has not changed
+        if (new_max_epoch == self.max_epoch):
 
-    def __gt__(self, other: 'HVC') -> bool:
-        self_vc = self.as_list()
-        other_vc = other.as_list()
-        for idx in range(self.max_proc):
-            if self_vc[idx] <= other_vc[idx]:
-                return False
+            # If our dictionary holds the counter or not
+            if(self.pid in self.counters):
+                self.counters[self.pid] += 1
+            else:
+                self.counters[self.pid] = 1
 
-    def __ge__(self, other: 'HVC') -> bool:
-        self_vc = self.as_list()
-        other_vc = other.as_list()
-        for idx in range(self.max_procs):
-            if self_vc[idx] < other_vc[idx]:
-                return False
-    
-    def find_system_epoch(self):
-
-        return dt.datetime.now(dt.timezone.utc).time()
-        
-    def advance(self, phy_clock: int):
-        
-        # print('\nAdvancing..')
-        # system_epoch = self.find_system_epoch()
-        new_max_epoch = max(self.max_epoch, floor(phy_clock / self.interval))
-
-        if(new_max_epoch == self.max_epoch):
-            # print('Max epoch matches, advancing counter')
-            self.counters[self.pid] += 1
-        
+        # We have a new max epoch
         else:
-            # print('Max epoch does not match, resetting counters and offsets')
-            self.counters = [0]*self.max_procs
-            for idx in range(self.max_procs):
-                if(self.offsets[idx] != self.epsilon):
-                    self.offsets[idx] = min(self.offsets[idx] + new_max_epoch - self.max_epoch, self.epsilon)
+            self.counters.clear()
+            for process in list(self.offsets.keys()):
+                new_offset = self.offsets[process] + new_max_epoch - self.max_epoch
+                if new_offset < self.epsilon:
+                    self.offsets[process] = new_offset
+                else:
+                    del self.offsets[process]
 
         self.max_epoch = new_max_epoch
         self.offsets[self.pid] = 0
-        
+
+    '''
+    This is when we hear a new message from a process in the system
+    '''
+
     def merge(self, m: 'HVC', phy_clock: int):
 
-        # print('\nMerging clocks')
-        # system_epoch = self.find_system_epoch()
-        new_max_epoch = max(self.max_epoch, floor(phy_clock / self.interval), m.max_epoch) 
+        # Check if the new max epoch has changed by discretizing our clock to fit the interval chosen and comparing the clock from m
+        new_max_epoch = max(
+            self.max_epoch,
+            math.floor(phy_clock / self.interval),
+            m.max_epoch
+        )
 
+        # If the message is in the same epoch
         if new_max_epoch == self.max_epoch and new_max_epoch == m.max_epoch:
-            for pid in range(self.max_procs):
-                self.counters[pid] = max(self.counters[pid], m.counters[pid])
-            self.counters[self.pid] = max(self.counters[self.pid], m.counters[self.pid]) + 1
+
+            for key in self.counters.keys() & m.counters.keys():
+                self.counters[key] = max(self.counters[key], m.counters[key])
+
+            for key in m.counters.keys() - self.counters.keys():
+                self.counters[key] = m.counters[key]
+
+            for key in self.offsets.keys() & m.offsets.keys():
+                self.offsets[key] = max(self.offsets[key], m.offsets[key])
+
+            for key in m.offsets.keys() - self.offsets.keys():
+                self.offsets[key] = m.offsets[key]
+
+            if(self.pid in self.counters):
+                self.counters[self.pid] += 1
+            else:
+                self.counters[self.pid] = 1
+
             self.offsets[m.pid] = 0
 
+        # If the message is lagging
         elif new_max_epoch == self.max_epoch:
-            # print('Max epoch unchanged, resetting offsets')
-            self.counters[self.pid] += 1
-            self.offsets[m.pid] = floor(min(self.max_epoch - m.max_epoch, self.epsilon))
 
+            if(self.pid in self.counters):
+                self.counters[self.pid] += 1
+            else:
+                self.counters[self.pid] = 1
+
+            msg_offset = self.max_epoch - m.max_epoch
+            for key in m.offsets.keys() - self.offsets.keys():
+                if m.offsets[key] + msg_offset < self.epsilon:
+                    self.offsets[key] = m.offsets[key] + msg_offset
+
+            if msg_offset < self.epsilon:
+                for key in m.counters.keys() - self.counters.keys():
+                    self.counters[key] = m.counters[key]
+
+            if msg_offset < self.epsilon:
+                self.offsets[m.pid] = msg_offset
+            else:
+                if(m.pid in self.offsets):
+                    del self.offsets[m.pid]
+
+        # If the message is leading
         elif new_max_epoch == m.max_epoch:
-            # print('Max epoch changed to message, resetting clock')
-            self.offsets = m.offsets
-            self.counters = m.counters
-            self.counters[self.pid] += 1
+
+            msg_offset = m.max_epoch - self.max_epoch
+
+            for key in m.counters.keys():
+                self.counters[key] = m.counters[key]
+
+            for key in self.offsets.keys():
+                if self.offsets[key] + msg_offset < self.epsilon:
+                    self.offsets[key] += msg_offset
+
+            for key in m.offsets.keys():
+                self.offsets[key] = m.offsets[key]
+
             self.max_epoch = m.max_epoch
 
         else:
-            # print('System clock changed max epoch, just advancing')
             self.advance(phy_clock=phy_clock)
 
         self.offsets[self.pid] = 0
-
-
-if __name__ == '__main__':
-
-    # clock1 = HVC([10, 10, 10], 10, 10, 0, 3)
-    # clock2 = HVC([10, 10, 10], 10, 10, 1, 3)
-    # clock3 = HVC([10, 10, 10], 10, 10, 2, 3)
-
-    def print_clock(clock: HVC):
-
-        print('{clock} for process {pid}'.format(clock = clock, pid = clock.pid))
-
-    # clock1.max_epoch = 60
-    # clock1.offsets = [0, 2, 3]
-    # clock1.counters = [2, 0, 0]
-    
-    # clock2.max_epoch = 60
-    # clock2.offsets = [1, 0, 5]
-    # clock2.counters = [1, 2, 0]
-
-    # clock1.merge(clock2, 0)
-    # print_clock(clock1)
-
-    # clock2.max_epoch = 60
-    # clock2.offsets = [1, 0, 5]
-    # clock2.counters = [1, 5, 3]
-
-    # clock1.merge(clock2, 0)
-
-    # print_clock(clock1)
-
-    # clock1.advance(1)
-
-    # print_clock(clock1)
-
-    # clock2.advance(61)
-    
-    # print_clock(clock1)
-
-    # clock1.merge(clock2, 0)
-    
-    # print_clock(clock1)
-
-    # Implement time leader
-    # Email Duong for client server setting tests
-    # DKBF - designed by Muhammad for Client server tests (Google protocol for marshalling) - thesis
-
-    clock1 = HVC([0, 0], 2, 10, 0, 2)
-    print_clock(clock1)
-
-    clock1.advance(1)
-    print_clock(clock1)
