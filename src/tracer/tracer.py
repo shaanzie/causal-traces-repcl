@@ -34,10 +34,15 @@ class Tracer:
         event_id = 0
         for send_event in sends:
             for recv_event in recvs:
-                if send_event.sender == recv_event.receiver and send_event.receiver == recv_event.sender and send_event.event_time <= recv_event.event_time:
+                if send_event.sender == recv_event.receiver and send_event.receiver == recv_event.sender and send_event.event_time <= recv_event.event_time and send_event.event_id == 0 and recv_event.event_id == 0:
                     send_event.event_id = event_id
                     recv_event.event_id = event_id
                     event_id += 1
+                    print('Matched {num}/{den} events...)'.format(
+                        num = event_id*2,
+                        den = len(sends) + len(recvs)
+                    ))
+
 
         matched_events = sends.append(recvs)
 
