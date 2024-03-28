@@ -86,3 +86,5 @@ if __name__ == '__main__':
     tracer = Tracer(events)
 
     grouped_events = tracer.order_events()
+
+    tracer.run_replay(grouped_events)

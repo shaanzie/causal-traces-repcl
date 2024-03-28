@@ -55,8 +55,8 @@ class Tracer:
 
         print('Ordering events...')
         
-        events = self.match_sends_and_recvs()
-        sorted_events = sorted(events)
+        sorted_events = sorted(self.trace)
+        # events = self.match_sends_and_recvs()
 
         grouped_list = []
         current_group = []
@@ -76,5 +76,18 @@ class Tracer:
         return grouped_list                
 
 
-    def start_tracing(self) -> None:
-        pass
+    def run_replay(self, grouped_events: list) -> None:
+        
+        for events in grouped_events:
+            if len(events) == 1:
+                print(events[0])
+            else:
+                print("Concurrent events detected!")    
+                for idx in range(len(events)):
+                    print("{idx}. {event}".format(
+                        idx = idx,
+                        event = events[idx]
+                    ))
+                for idx in range(len(events)):
+                    event_id = int(input('Please choose the event to replay: '))
+                    print(events[event_id])
