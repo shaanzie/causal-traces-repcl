@@ -1,8 +1,9 @@
 from event.event import Event
+import json
 
 class Tracer:
 
-    def __init__(self, trace: list[Event]) -> None:
+    def __init__(self, trace: list) -> None:
         
         self.trace = trace
 
@@ -73,14 +74,25 @@ class Tracer:
 
         print('Events ordered.')
         
-        return grouped_list                
+        return grouped_list           
+
+
+    def append_to_json_file(self, data, file_path):
+        with open(file_path, 'a') as file:
+            json_string = json.dumps(data)
+            file.write(json_string + ',\n')
 
 
     def run_replay(self, grouped_events: list) -> None:
+
+        json_trace = dict()
+        json_trace['trace'] = []
         
+
         for events in grouped_events:
             if len(events) == 1:
                 print(events[0])
+                json_trace['trace'].append(events[0].jsonify())
             else:
                 print("Concurrent events detected!")    
                 for idx in range(len(events)):
@@ -91,3 +103,7 @@ class Tracer:
                 for idx in range(len(events)):
                     event_id = int(input('Please choose the event to replay: '))
                     print(events[event_id])
+                    json_trace['trace'].append(events[event_id].jsonify())
+        
+        Trace_File = open(r'generated_trace.json', 'w')
+        Trace_File.write(json.dumps(json_trace))

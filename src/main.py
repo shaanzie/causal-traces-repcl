@@ -73,7 +73,7 @@ if __name__ == '__main__':
     }
 
     df = pd.read_csv(
-        filepath_or_buffer='/Users/ishaanlagwankar/Desktop/code/causal-traces-repcl/sample_trace.csv',
+        filepath_or_buffer='/mnt/d/Code/summer_research/causal-traces-repcl/data/sample_trace.csv',
         dtype=str, 
         low_memory=False, 
         header=None

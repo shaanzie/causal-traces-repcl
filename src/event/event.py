@@ -33,3 +33,13 @@ class Event:
             sender = self.sender,
             receiver = self.receiver
         )
+    
+    def jsonify(self) -> str:
+        return {
+            "event_id": self.event_id,
+            "event_type": self.event_type,
+            "event_time": self.event_time.jsonify(),
+            "node_1": self.sender,
+            "node_2": self.receiver
+        }
+           

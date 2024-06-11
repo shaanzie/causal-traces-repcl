@@ -7,10 +7,11 @@ class ReplayClock:
         self.bitmap = bitmap[::-1]
         self.offsets = [offsets[i:i + offset_size] for i in range(0, len(offsets), offset_size)]
         self.offsets.reverse()
+        self.readable_offsets = self.convert_to_readable_offsets(offset_size=offset_size, epsilon=epsilon)
         self.counters = counters
         self.vector_offsets = self.convert_to_vector_offsets(offset_size=offset_size, epsilon=epsilon)
 
-    def convert_to_vector_offsets(self, offset_size: int, epsilon: int) -> list:
+    def convert_to_readable_offsets(self, offset_size: int, epsilon: int) -> list:
 
         vc = []
 
@@ -24,6 +25,23 @@ class ReplayClock:
                 offset = self.offsets[index]
                 index += 1
                 vc.append(int(offset, 2))
+
+        return vc
+    
+    def convert_to_vector_offsets(self, offset_size: int, epsilon: int) -> list:
+
+        vc = []
+
+        index = 0
+        for process in range(len(self.bitmap)):
+            
+            if(self.bitmap[process] == '0'):
+                vc.append(self.hlc - epsilon)
+            
+            else:
+                offset = self.offsets[index]
+                index += 1
+                vc.append(self.hlc - int(offset, 2))
 
         return vc
     
@@ -69,10 +87,19 @@ class ReplayClock:
         return "[(NodeId={nodeId}, HLC={hlc}, Offsets={offsets}, Counters={counters})]".format(
             nodeId = self.nodeId,
             hlc = self.hlc,
-            offsets = self.vector_offsets,
+            offsets = self.readable_offsets,
             counters = self.counters
         )
+    
+    def jsonify(self) -> dict:
 
+        return {
+            "nodeId": self.nodeId,
+            "hlc": self.hlc,
+            "offsets": self.readable_offsets,
+            "counters": self.counters,
+            "vector_clock": self.vector_offsets
+        }
 
 
 if __name__ == '__main__':
