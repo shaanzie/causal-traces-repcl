@@ -43,3 +43,10 @@ class Event:
             "node_2": self.receiver
         }
            
+    def shiviz_format(self) -> str:
+        return "{host1} {event} {timestamp} \n".format(
+            host1 = self.event_time.node_maps[self.sender],
+            event = self.event_type,
+            timestamp = self.event_time.shiviz_format()
+
+        )

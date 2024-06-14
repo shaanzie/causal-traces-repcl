@@ -87,12 +87,15 @@ class Tracer:
 
         json_trace = dict()
         json_trace['trace'] = []
+
+        shiviz_trace = open('shiviz_trace.txt', 'w')
         
 
         for events in grouped_events:
             if len(events) == 1:
                 print(events[0])
                 json_trace['trace'].append(events[0].jsonify())
+                shiviz_trace.write(events[0].shiviz_format())
             else:
                 print("Concurrent events detected!")    
                 for idx in range(len(events)):
@@ -104,6 +107,7 @@ class Tracer:
                     event_id = int(input('Please choose the event to replay: '))
                     print(events[event_id])
                     json_trace['trace'].append(events[event_id].jsonify())
+                    shiviz_trace.write(events[event_id].shiviz_format())
         
         Trace_File = open(r'generated_trace.json', 'w')
         Trace_File.write(json.dumps(json_trace))

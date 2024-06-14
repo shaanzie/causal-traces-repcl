@@ -10,6 +10,13 @@ class ReplayClock:
         self.readable_offsets = self.convert_to_readable_offsets(offset_size=offset_size, epsilon=epsilon)
         self.counters = counters
         self.vector_offsets = self.convert_to_vector_offsets(offset_size=offset_size, epsilon=epsilon)
+        self.node_maps = {
+            '10.1.1.1': 'alice',
+            '10.1.1.2': 'bob',
+            '10.1.1.3': 'charlie',
+            '10.1.1.4': 'delta',
+            '10.1.1.5': 'echo',
+        }
 
     def convert_to_readable_offsets(self, offset_size: int, epsilon: int) -> list:
 
@@ -36,12 +43,12 @@ class ReplayClock:
         for process in range(len(self.bitmap)):
             
             if(self.bitmap[process] == '0'):
-                vc.append(self.hlc - epsilon)
+                vc.append(self.hlc)
             
             else:
                 offset = self.offsets[index]
                 index += 1
-                vc.append(self.hlc - int(offset, 2))
+                vc.append(self.hlc + epsilon - int(offset, 2))
 
         return vc
     
@@ -101,6 +108,12 @@ class ReplayClock:
             "vector_clock": self.vector_offsets
         }
 
+    def shiviz_format(self) -> dict:
+        
+        vc = {}
+        for i,j in zip(['alice', 'bob', 'charlie', 'delta', 'echo'], range(len(self.vector_offsets))):
+            vc[i] = self.vector_offsets[j]
+        return vc
 
 if __name__ == '__main__':
 
