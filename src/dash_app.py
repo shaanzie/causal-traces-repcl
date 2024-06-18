@@ -101,7 +101,7 @@ def add_event_arrow(event, fig, meta):
     send_time = 0
 
     for e in json_trace["trace"]:
-        if(e["event_id"] == event["event_id"] and e["event_type"] == 'SEND' and e["node_2"] == event["node_1"] and e["node_1"] == event["node_2"]):
+        if(e["seqts"] == event["seqts"] and e["event_type"] == 'SEND' and e["node_2"] == event["node_1"] and e["node_1"] == event["node_2"]):
             send_time = e["event_time"]["hlc"]
 
     proc_1 = meta[event["node_2"]] - 1
@@ -155,12 +155,18 @@ fig = generate_base_figure(meta)
 
 fig = add_events(fig, json_trace, meta)
 
+
+
+tree = go.Figure()
+
+
 app = Dash()
 
 app.layout = [
 
     html.Div(children='RepViz Graphical Interface'),
-    dcc.Graph(figure=fig, id='swimlane', style={'width': '100%', 'height': '90vh'}, animate=True)
+    dcc.Graph(figure=fig, id='swimlane', style={'width': '100%', 'height': '90vh'}, animate=False),
+    dcc.Graph(figure=tree, id='tree', style={'width': '100%', 'height': '90vh'}, animate=False)
 
 ]
 

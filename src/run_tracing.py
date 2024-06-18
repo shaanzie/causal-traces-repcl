@@ -1,5 +1,6 @@
 from tracer.tracer import Tracer
 from event.event import Event
+from schedule.schedule_tree import FamilyOfSchedules
 from replay_clock.replay_clock import ReplayClock
 import pandas as pd
 import argparse
@@ -9,13 +10,15 @@ import requests
 def convert_df_to_list(df: pd.DataFrame):
 
     event_list = []
+    event_uid = 0
 
     for index, row in df.iterrows():
         if index == 0:
             continue
         
         e = Event(
-            event_id=row['SEQTS'],
+            event_id=event_uid,
+            seqts=row['SEQTS'],
             event_type=row['MSG_TYPE'],
             event_time=ReplayClock(
                 nodeId=row['NODE_1'],
@@ -30,6 +33,7 @@ def convert_df_to_list(df: pd.DataFrame):
             receiver=row['NODE_2']
         )
         event_list.append(e)
+        event_uid += 1
 
     return event_list
 
@@ -116,5 +120,11 @@ if __name__ == '__main__':
     tracer = Tracer(events)
 
     grouped_events = tracer.order_events()
+
+    schedule = FamilyOfSchedules()
+
+    schedule_tree = schedule.build_schedule_tree(grouped_events)
+
+    schedule.printAllRootToLeafPaths(schedule_tree)
 
     tracer.run_replay(grouped_events)

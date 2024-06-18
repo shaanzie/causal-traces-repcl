@@ -2,9 +2,10 @@ from replay_clock.replay_clock import ReplayClock
 
 class Event:
 
-    def __init__(self, event_id: int, event_type: str, event_time: ReplayClock, sender: int, receiver: int):
+    def __init__(self, event_id: int, seqts: int, event_type: str, event_time: ReplayClock, sender: int, receiver: int):
         
         self.event_id = event_id
+        self.seqts = seqts
         self.event_type = event_type
         self.event_time = event_time
         self.sender = sender
@@ -26,8 +27,9 @@ class Event:
         return self.event_time == event.event_time
     
     def __repr__(self) -> str:
-        return "[(EventID={event_id}, EventType={event_type}, EventTime={event_time}, Sender={sender}, Receiver={receiver})]".format(
+        return "[(EventID={event_id}, SeqTS={seqts}, EventType={event_type}, EventTime={event_time}, Sender={sender}, Receiver={receiver})]".format(
             event_id = self.event_id,
+            seqts = self.seqts,
             event_type = self.event_type,
             event_time = self.event_time,
             sender = self.sender,
@@ -37,16 +39,9 @@ class Event:
     def jsonify(self) -> str:
         return {
             "event_id": self.event_id,
+            "seqts": self.seqts,
             "event_type": self.event_type,
             "event_time": self.event_time.jsonify(),
             "node_1": self.sender,
             "node_2": self.receiver
         }
-           
-    def shiviz_format(self) -> str:
-        return "{host1} {event} {timestamp} \n".format(
-            host1 = self.event_time.node_maps[self.sender],
-            event = self.event_type,
-            timestamp = self.event_time.shiviz_format()
-
-        )
