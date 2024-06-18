@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h1>{% block title %} Welcome to RepViz {% endblock %}</h1>
+
+    <div id="graph-container"  style="width:100%;height:100%;">
+        <canvas id="graph"></canvas>
+    </div>
+{% endblock %}
