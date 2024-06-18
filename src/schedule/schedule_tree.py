@@ -78,16 +78,12 @@ class FamilyOfSchedules:
             self.vec.pop()
             return
     
-        # Recur for all children of
-        # the current node
         for i in range(len(root.children)):
     
-            # Recursive Function Call
             self.printAllRootToLeafPaths(root.children[i])
             
         self.vec.pop()    
-    
-    # Function to print root to leaf path
+        
     def printRootToLeafPaths(self, root):
         
         if (not root):

@@ -1,11 +1,37 @@
-from tracer.tracer import Tracer
-from event.event import Event
-from schedule.schedule_tree import FamilyOfSchedules
-from replay_clock.replay_clock import ReplayClock
-import pandas as pd
-import argparse
+from flask import Flask, request, jsonify
+from dash import Dash, html, dcc, Output, Input, callback
 import json
-import requests
+from matplotlib import figure
+import plotly.express as px
+import plotly.graph_objects as go
+import argparse
+import pandas as pd
+
+from event.event import Event
+from replay_clock.replay_clock import ReplayClock
+
+from tracer.tracer import Tracer
+from schedule.schedule_tree import FamilyOfSchedules
+
+from graphers.swimlane import Swimlane
+from graphers.tree import TreeGrapher
+
+def get_metadata(trace):
+
+    num_procs = len(trace["trace"][0]["event_time"]["offsets"])
+    xlim = (trace["trace"][-1]["event_time"]["hlc"])*2
+    
+    meta = {
+        'num_procs': num_procs,
+        'xlim': xlim,
+    }
+
+    for i in range(num_procs):
+        meta["10.1.1.{}".format(i + 1)] = i + 1
+
+    print(meta)
+
+    return meta
 
 def convert_df_to_list(df: pd.DataFrame):
 
@@ -37,30 +63,17 @@ def convert_df_to_list(df: pd.DataFrame):
 
     return event_list
 
-# def send_init_params_to_server(df: pd.DataFrame):
 
-#     data_row = df.iloc[1]
-#     num_nodes = data_row['NUM_PROCS']
 
-#     initParams = {
-#         "num_nodes": num_nodes,
-#         "max_X": 5000
-#     }
-#     # Send request to flask to add procs
-#     request_data = json.dumps(initParams)
-#     response = requests.post(url='http://127.0.0.1:8050/init', json=request_data)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(
-        prog='RepViz',
-        description='Visualizer for RepCl-timestamped trace'
+        prog="RepViz Graphical Interface"
     )
 
-    parser.add_argument('filename')
-
+    parser.add_argument('filename', help='Input the file to be graphed')
     args = parser.parse_args()
-    print('Parsing {}'.format(args.filename))
 
     columns = [
         'MSG_TYPE',
@@ -128,3 +141,26 @@ if __name__ == '__main__':
     schedule.printAllRootToLeafPaths(schedule_tree)
 
     tracer.run_replay(grouped_events)
+
+    f = open('generated_trace.json')
+    json_trace = json.load(f)
+
+    meta = get_metadata(json_trace)
+
+    swimlane_grapher = Swimlane(meta, go.Figure())
+    swimlane_fig = swimlane_grapher.generate_graph(json_trace=json_trace)
+
+    tree_grapher = TreeGrapher(meta, go.Figure())
+    tree_fig = tree_grapher.generate_graph(json_trace=json_trace)
+
+    app = Dash()
+
+    app.layout = [
+
+        html.Div(children='RepViz Graphical Interface'),
+        dcc.Graph(figure=swimlane_fig, id='swimlane', style={'width': '100%', 'height': '90vh'}, animate=False),
+        dcc.Graph(figure=tree_fig, id='tree', style={'width': '100%', 'height': '90vh'}, animate=False)
+
+    ]
+
+    app.run_server()
