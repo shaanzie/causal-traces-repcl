@@ -1,3 +1,7 @@
+from copy import deepcopy
+import json
+
+
 class TreeNode:
     
     def __init__(self, nodeId, event):
@@ -5,8 +9,14 @@ class TreeNode:
         self.event = event
         self.children = []
         
+    def __str__(self, level=0):
+        ret = "\t"*level+repr(self.nodeId)+"\n"
+        for child in self.children:
+            ret += child.__str__(level+1)
+        return ret
+
     def __repr__(self):
-        return 'EventId={}, children={}'.format(self.event_id, self.children)
+        return '<tree node representation>'
     
     def add_child(self, node: 'TreeNode'):
         self.children.append(node)
@@ -15,6 +25,7 @@ class FamilyOfSchedules:
 
     def __init__(self) -> None:
         self.vec = []
+        self.candidate_traces = []
 
     def lr(self, arr):
         temp = arr[0]
@@ -60,17 +71,15 @@ class FamilyOfSchedules:
     
     def printPath(self):
 
-        for ele in self.vec:
-            print(ele, end = " ")
-            
-        print()
+        candidate_trace = deepcopy(self.vec)
+        self.candidate_traces.append(candidate_trace)
     
     def printAllRootToLeafPaths(self, root):
         
         if (not root):
             return
 
-        self.vec.append(root.nodeId)
+        self.vec.append(root.event)
     
         if (len(root.children) == 0):
 
@@ -90,3 +99,26 @@ class FamilyOfSchedules:
             return
         
         self.printAllRootToLeafPaths(root)
+
+    def build_candidate_traces(self, schedule_tree: TreeNode):
+
+        self.printRootToLeafPaths(schedule_tree)
+
+        json_trace = dict()
+        json_trace['candidate_traces'] = []
+
+        for trace in range(len(self.candidate_traces)):
+            
+            json_trace['candidate_traces'].insert(trace, {'trace_id': trace})
+            json_trace['candidate_traces'][trace]['trace'] = []
+            for event in self.candidate_traces[trace]:
+                    try:
+                        json_trace['candidate_traces'][trace]['trace'].append(event.jsonify())
+                    except:
+                        pass
+        
+        Trace_File = open(r'candidate_traces.json', 'w')
+        Trace_File.write(json.dumps(json_trace))
+
+    def get_trace(self, value: int):
+        return self.candidate_traces[value]

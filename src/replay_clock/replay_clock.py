@@ -10,13 +10,7 @@ class ReplayClock:
         self.readable_offsets = self.convert_to_readable_offsets(offset_size=offset_size, epsilon=epsilon)
         self.counters = counters
         self.vector_offsets = self.convert_to_vector_offsets(offset_size=offset_size, epsilon=epsilon)
-        self.node_maps = {
-            '10.1.1.1': 'alice',
-            '10.1.1.2': 'bob',
-            '10.1.1.3': 'charlie',
-            '10.1.1.4': 'delta',
-            '10.1.1.5': 'echo',
-        }
+        
 
     def convert_to_readable_offsets(self, offset_size: int, epsilon: int) -> list:
 
@@ -91,12 +85,18 @@ class ReplayClock:
     
     def __repr__(self) -> str:
         
-        return "[(NodeId={nodeId}, HLC={hlc}, Offsets={offsets}, Counters={counters})]".format(
-            nodeId = self.nodeId,
-            hlc = self.hlc,
-            offsets = self.readable_offsets,
-            counters = self.counters
-        )
+        # return "[(NodeId={nodeId}, HLC={hlc}, Offsets={offsets}, Counters={counters})]".format(
+        #     nodeId = self.nodeId,
+        #     hlc = self.hlc,
+        #     offsets = self.vector_offsets,
+        #     counters = self.counters
+        # )
+        return '[VectorClock={}]'.format(self.vector_offsets)
+    
+    def get_human_readable_time(self) -> str:
+
+        pt = self.vector_offsets[self.nodeId] + self.counters/10000
+        return pt
     
     def jsonify(self) -> dict:
 

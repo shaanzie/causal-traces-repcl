@@ -1,7 +1,6 @@
-from flask import Flask, request, jsonify
+import sched
 from dash import Dash, html, dcc, Output, Input, callback
 import json
-from matplotlib import figure
 import plotly.express as px
 import plotly.graph_objects as go
 import argparse
@@ -14,7 +13,7 @@ from tracer.tracer import Tracer
 from schedule.schedule_tree import FamilyOfSchedules
 
 from graphers.swimlane import Swimlane
-from graphers.tree import TreeGrapher
+from graphers.candidates import CandidateGraph
 
 def get_metadata(trace):
 
@@ -128,8 +127,6 @@ if __name__ == "__main__":
 
     events = convert_df_to_list(df)
 
-    # send_init_params_to_server(df)
-
     tracer = Tracer(events)
 
     grouped_events = tracer.order_events()
@@ -138,7 +135,7 @@ if __name__ == "__main__":
 
     schedule_tree = schedule.build_schedule_tree(grouped_events)
 
-    schedule.printAllRootToLeafPaths(schedule_tree)
+    schedule.build_candidate_traces(schedule_tree)
 
     tracer.run_replay(grouped_events)
 
@@ -150,8 +147,14 @@ if __name__ == "__main__":
     swimlane_grapher = Swimlane(meta, go.Figure())
     swimlane_fig = swimlane_grapher.generate_graph(json_trace=json_trace)
 
-    tree_grapher = TreeGrapher(meta, go.Figure())
-    tree_fig = tree_grapher.generate_graph(json_trace=json_trace)
+    f.close()
+    f = open('candidate_traces.json')
+    candidate_traces = json.load(f)
+    
+    candidate_grapher = CandidateGraph(meta, go.Figure(), candidate_traces=candidate_traces)
+    candidate_fig = candidate_grapher.fig
+
+    options = list(range(0, len(candidate_traces["candidate_traces"])))
 
     app = Dash()
 
@@ -159,8 +162,34 @@ if __name__ == "__main__":
 
         html.Div(children='RepViz Graphical Interface'),
         dcc.Graph(figure=swimlane_fig, id='swimlane', style={'width': '100%', 'height': '90vh'}, animate=False),
-        dcc.Graph(figure=tree_fig, id='tree', style={'width': '100%', 'height': '90vh'}, animate=False)
+        dcc.Dropdown(options=options, placeholder="Select a trace", id="trace-selector"),
+        dcc.Graph(figure=candidate_fig, id='candidate', style={'width': '100%', 'height': '90vh'}, animate=False),
+        html.Div(id='trace-log')
 
     ]
+
+    @callback(
+        Output('candidate', 'figure'),
+        Input('trace-selector', 'value')
+    )
+    def update_candidate_figure(value):
+    
+        candidate_fig = candidate_grapher.generate_graph(value=value)
+        return candidate_fig
+    
+    @callback(
+        Output('trace-log', 'children'),
+        Input('trace-selector', 'value')
+    )
+    def update_candidate_figure(value):
+        
+        div_list = []
+        candidate_trace = schedule.get_trace(value=value)
+        str_rep = ''
+        for event in candidate_trace:
+            div = html.Div(children='{}'.format(event))
+            div_list.append(div)
+        return div_list
+    
 
     app.run_server()
