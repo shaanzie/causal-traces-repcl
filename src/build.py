@@ -18,14 +18,16 @@ from graphers.candidates import CandidateGraph
 def get_metadata(trace):
 
     num_procs = len(trace["trace"][0]["event_time"]["offsets"])
-    xlim = (trace["trace"][-1]["event_time"]["hlc"])*2
+    xlim = (trace["trace"][-1]["event_time"]["hlc"]) + 10
     
     meta = {
         'num_procs': num_procs,
         'xlim': xlim,
+        'nodes': []
     }
 
     for i in range(num_procs):
+        meta['nodes'].append("10.1.1.{}".format(i + 1))
         meta["10.1.1.{}".format(i + 1)] = i + 1
 
     print(meta)
@@ -154,7 +156,10 @@ if __name__ == "__main__":
     candidate_grapher = CandidateGraph(meta, go.Figure(), candidate_traces=candidate_traces)
     candidate_fig = candidate_grapher.fig
 
+    process_fig = go.Figure()
+
     options = list(range(0, len(candidate_traces["candidate_traces"])))
+    process = meta["nodes"]
 
     app = Dash()
 
@@ -163,33 +168,57 @@ if __name__ == "__main__":
         html.Div(children='RepViz Graphical Interface'),
         dcc.Graph(figure=swimlane_fig, id='swimlane', style={'width': '100%', 'height': '90vh'}, animate=False),
         dcc.Dropdown(options=options, placeholder="Select a trace", id="trace-selector"),
-        dcc.Graph(figure=candidate_fig, id='candidate', style={'width': '100%', 'height': '90vh'}, animate=False),
-        html.Div(id='trace-log')
+        dcc.Dropdown(options=process, placeholder="Select a process", id="process-selector"),
+        html.Div(id='graph-holder', children=[
+            dcc.Graph(figure=candidate_fig, id='candidate', style={'width': '100%', 'height': '90vh'}, animate=False),
+            dcc.Graph(figure=process_fig, id='process', style={'width': '100%', 'height': '90vh'}, animate=False),
+        ]),
+        html.Div(id='trace-log'),
+
 
     ]
 
     @callback(
         Output('candidate', 'figure'),
+        Output('trace-log', 'children'),
         Input('trace-selector', 'value')
     )
     def update_candidate_figure(value):
     
         candidate_fig = candidate_grapher.generate_graph(value=value)
-        return candidate_fig
-    
-    @callback(
-        Output('trace-log', 'children'),
-        Input('trace-selector', 'value')
-    )
-    def update_candidate_figure(value):
-        
+
         div_list = []
         candidate_trace = schedule.get_trace(value=value)
-        str_rep = ''
         for event in candidate_trace:
             div = html.Div(children='{}'.format(event))
             div_list.append(div)
-        return div_list
+    
+        return candidate_fig, div_list
+        
+    
+    @callback(
+        Output('process', 'figure'),
+        Input('trace-selector', 'value'),
+        Input('process-selector', 'value')
+    )
+    def update_process_figure(trace, process):
+
+        candidate_trace = schedule.get_trace(value=trace)
+        process_trace = {
+            "trace": []
+        }
+        for event in candidate_trace:
+            try:
+                if event.sender == process or event.receiver == process:
+                    process_trace['trace'].append(event.jsonify())
+            except Exception as e:
+                print(e)
+
+        swimlane = Swimlane(meta, go.Figure())
+
+        swimlane.generate_graph(process_trace)
+
+        return swimlane.get_figure()
     
 
     app.run_server()
