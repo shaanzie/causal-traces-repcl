@@ -18,7 +18,7 @@ from graphers.candidates import CandidateGraph
 def get_metadata(trace):
 
     num_procs = len(trace["trace"][0]["event_time"]["offsets"])
-    xlim = (trace["trace"][-1]["event_time"]["hlc"]) + 10
+    xlim = (trace["trace"][-1]["event_time"]["hlc"]) + 500
     
     meta = {
         'num_procs': num_procs,
@@ -40,6 +40,7 @@ def convert_df_to_list(df: pd.DataFrame):
     event_uid = 0
 
     for index, row in df.iterrows():
+
         if index == 0:
             continue
         
@@ -57,7 +58,8 @@ def convert_df_to_list(df: pd.DataFrame):
                 epsilon=int(row['EPSILON'])
             ),
             sender=row['NODE_1'],
-            receiver=row['NODE_2']
+            receiver=row['NODE_2'],
+            msg_body=row['MSG_BODY']
         )
         event_list.append(e)
         event_uid += 1
@@ -94,7 +96,8 @@ if __name__ == "__main__":
         'OFFSET_SIZE',
         'COUNTER_SIZE',
         'CLOCK_SIZE',
-        'MAX_OFFSET'
+        'MAX_OFFSET',
+        'MSG_BODY'
     ]
 
     dtypes = {
@@ -115,7 +118,8 @@ if __name__ == "__main__":
         'OFFSET_SIZE': float,
         'COUNTER_SIZE': float,
         'CLOCK_SIZE': float,
-        'MAX_OFFSET': float
+        'MAX_OFFSET': float,
+        'MSG_BODY': str
     }
 
     df = pd.read_csv(
@@ -129,9 +133,9 @@ if __name__ == "__main__":
 
     events = convert_df_to_list(df)
 
-    tracer = Tracer(events)
+    tracer = Tracer()
 
-    grouped_events = tracer.order_events()
+    grouped_events = tracer.order_events(events)
 
     schedule = FamilyOfSchedules()
 
@@ -139,7 +143,7 @@ if __name__ == "__main__":
 
     schedule.build_candidate_traces(schedule_tree)
 
-    tracer.run_replay(grouped_events)
+    tracer.run_new_replay(events)
 
     f = open('generated_trace.json')
     json_trace = json.load(f)
@@ -166,7 +170,8 @@ if __name__ == "__main__":
     app.layout = [
 
         html.Div(children='RepViz Graphical Interface'),
-        dcc.Graph(figure=swimlane_fig, id='swimlane', style={'width': '100%', 'height': '90vh'}, animate=False),
+        dcc.Graph(figure=swimlane_fig, id='swimlane', style={'width': '100%', 'height': '90vh'}, animate=False, clear_on_unhover=True),
+        dcc.Tooltip(id='swimlane-tooltip'),
         dcc.Dropdown(options=options, placeholder="Select a trace", id="trace-selector"),
         dcc.Dropdown(options=process, placeholder="Select a process", id="process-selector"),
         html.Div(id='graph-holder', children=[

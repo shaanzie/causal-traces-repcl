@@ -37,12 +37,12 @@ class ReplayClock:
         for process in range(len(self.bitmap)):
             
             if(self.bitmap[process] == '0'):
-                vc.append(self.hlc)
+                vc.append(self.hlc - epsilon)
             
             else:
                 offset = self.offsets[index]
                 index += 1
-                vc.append(self.hlc + epsilon - int(offset, 2))
+                vc.append(self.hlc - int(offset, 2))
 
         return vc
     
@@ -55,7 +55,7 @@ class ReplayClock:
             for i, j in zip(self.vector_offsets, repcl.vector_offsets):
                 if i > j:
                     return False
-            if self.counters <= repcl.counters:
+            if self.counters < repcl.counters:
                 return True
             return False
 
@@ -69,13 +69,13 @@ class ReplayClock:
             for i, j in zip(self.vector_offsets, repcl.vector_offsets):
                 if i < j:
                     return False
-            if self.counters >= repcl.counters:
+            if self.counters > repcl.counters:
                 return True
             return False
 
     def __eq__(self, repcl: 'ReplayClock'):
         
-        return not(self > repcl) and not(self < repcl)
+        return not(self < repcl) and not(repcl < self)
 
     def __le__(self, repcl: 'ReplayClock'):
         return self < repcl or self == repcl
@@ -85,13 +85,13 @@ class ReplayClock:
     
     def __repr__(self) -> str:
         
-        # return "[(NodeId={nodeId}, HLC={hlc}, Offsets={offsets}, Counters={counters})]".format(
-        #     nodeId = self.nodeId,
-        #     hlc = self.hlc,
-        #     offsets = self.vector_offsets,
-        #     counters = self.counters
-        # )
-        return '[VectorClock={}]'.format(self.vector_offsets)
+        return "[(NodeId={nodeId}, HLC={hlc}, Offsets={offsets}, Counters={counters})]".format(
+            nodeId = self.nodeId,
+            hlc = self.hlc,
+            offsets = self.readable_offsets,
+            counters = self.counters
+        )
+        # return '[VectorClock={}]'.format(self.vector_offsets)
     
     def get_human_readable_time(self) -> str:
 

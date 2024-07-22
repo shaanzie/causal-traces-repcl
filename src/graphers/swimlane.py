@@ -75,6 +75,14 @@ class Swimlane:
             y1=y1,
             fillcolor=color
         )
+        self.fig.add_trace(go.Scatter(
+            x=[(x0 + x1) / 2],
+            y=[(y0 + y1) / 2],
+            mode='markers',
+            marker=dict(size=20, color='rgba(0,0,0,0)'),
+            hoverinfo='text',
+            text='{}'.format(event['msg_body']),
+        ))
 
 
     def add_event_arrow(self, event: Event, json_trace: dict) -> None:
@@ -113,7 +121,7 @@ class Swimlane:
             ayref="y",
             showarrow=True,
             arrowhead=1,
-            arrowsize=1,
+            arrowsize=3,
             arrowwidth=1,
             arrowcolor="RoyalBlue"
         )
