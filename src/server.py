@@ -1,15 +1,15 @@
 import argparse
-from multiprocessing import process
 from dash import Dash, html, dcc, Output, Input, callback, State
 import plotly.graph_objects as go
 import json
 
 from processor import FileProcessor
 from tracer.tracer import Tracer
-from schedule.schedule_tree import FamilyOfSchedules
+from schedule.schedule_tree import Forest
 
-from graphers.candidates import CandidateGraph
 from graphers.replayer import Replayer
+
+from exporter.exporter import Exporter
 
 # External stylesheet link
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
@@ -56,7 +56,7 @@ tracer = Tracer()
 
 grouped_events = tracer.order_events(events)
 
-schedule = FamilyOfSchedules()
+schedule = Forest()
 
 schedule_tree = schedule.build_schedule_tree(grouped_events)
 
@@ -68,11 +68,17 @@ tracer.run_new_replay(events)
 
 f = open('generated_trace.json')
 trace = json.load(f)
+f.close()
 
+exporter = Exporter()
+exporter.convert_trace_to_lc(trace=trace['trace'])
+
+f = open(r'generated_trace.json', 'w')
+f.write(json.dumps(trace))
+    
 swimlane_grapher = Replayer(meta, go.Figure())
 swimlane_grapher.generate_base_figure()
 
-f.close()
 f = open('candidate_traces.json')
 candidate_traces = json.load(f)
 

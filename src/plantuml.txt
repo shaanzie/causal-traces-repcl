@@ -1,0 +1,15 @@
+@startuml
+participant alice
+participant bob
+participant charlie
+participant delta
+participant echo
+
+alice -> delta: 12:05:41.94456\nIncrement(x)
+delta -> alice: 12:05:41.94457\nAckUpdate(x)-Storage Updated to 10
+charlie -> echo: 12:05:41.94458\nIncrement(y)
+bob -> delta: 12:05:41.94459\nDecrement(x)
+delta -> bob: 12:05:41.94460\nAckUpdate(x)-Storage Updated to 00
+echo -> charlie: 12:05:41.94461\nAckUpdate(y)-Storage Updated to 01
+
+@enduml

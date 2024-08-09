@@ -21,7 +21,7 @@ class TreeNode:
     def add_child(self, node: 'TreeNode'):
         self.children.append(node)
 
-class FamilyOfSchedules:
+class Forest:
 
     def __init__(self) -> None:
         self.vec = []

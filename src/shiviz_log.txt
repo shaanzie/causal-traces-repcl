@@ -1,0 +1,18 @@
+(?<timestamp>(\d*)) (?<event>.*)\n(?<host>\w*) (?<clock>.*)
+
+256824341944725 Initialize
+alice {"alice": 1}
+256824341944725 Initialize
+bob {"bob": 1}
+256824341944726 Increment(x): x = 1
+alice {"alice": 2}
+256824341944727 Send(m)
+alice {"alice": 3}
+256824341944728 Recv(m)
+bob {"alice": 3, "bob": 2}
+256824341944729 Decrement(x): x = 0
+alice {"alice": 4}
+256824341944729 Increment(y): y = 1
+bob {"alice": 3, "bob": 3}
+256824341944730 Decrement(y): y = 0
+bob {"alice": 3, "bob": 4}
