@@ -1,0 +1,121 @@
+{
+	"data": [
+		{
+			"traceID": "test",
+			"spans": [
+				{
+					"traceID": "test",
+					"spanID": "e1",
+					"operationName": "Increment(x)",
+					"references": null,
+					"startTime": "1",
+					"duration": 1,
+					"tags": null,
+					"logs": null,
+					"processID": "alice",
+					"warnings": null
+				},
+				{
+					"traceID": "test",
+					"spanID": "e2",
+					"operationName": "AckUpdate(x)-Storage Updated to 10",
+					"references": [
+                        {
+                            "refType": "CHILD_OF",
+                            "traceID": "test",
+                            "spanID": "e1"
+                        }
+                    ],
+					"startTime": "2",
+					"duration": 1,
+					"tags": null,
+					"logs": null,
+					"processID": "delta",
+					"warnings": null
+				},
+				{
+					"traceID": "test",
+					"spanID": "e5",
+					"operationName": "Decrement(x)",
+					"references": null,
+					"startTime": "3",
+					"duration": 1,
+					"tags": null,
+					"logs": null,
+					"processID": "bob",
+					"warnings": null
+				},
+				{
+					"traceID": "test",
+					"spanID": "e6",
+					"operationName": "AckUpdate(x)-Storage Updated to 00",
+					"references": [
+                        {
+                            "refType": "CHILD_OF",
+                            "traceID": "test",
+                            "spanID": "e5"
+                        }
+                    ],
+					"startTime": "4",
+					"duration": 1,
+					"tags": null,
+					"logs": null,
+					"processID": "delta",
+					"warnings": null
+				},
+				{
+					"traceID": "test",
+					"spanID": "e3",
+					"operationName": "Increment(y)",
+					"references": [],
+					"startTime": "5",
+					"duration": 1,
+					"tags": null,
+					"logs": null,
+					"processID": "charlie",
+					"warnings": null
+				},
+				{
+					"traceID": "test",
+					"spanID": "e4",
+					"operationName": "AckUpdate(y)-Storage Updated to 01",
+					"references": [
+                        {
+                            "refType": "CHILD_OF",
+                            "traceID": "test",
+                            "spanID": "e3"
+                        }
+                    ],
+					"startTime": "6",
+					"duration": 1,
+					"tags": null,
+					"logs": null,
+					"processID": "echo",
+					"warnings": null
+				}
+			],
+			"processes": {
+				"alice": {
+					"serviceName": "alice",
+					"tags": null
+				},
+				"bob": {
+					"serviceName": "bob",
+					"tags": null
+				},
+				"charlie": {
+					"serviceName": "charlie",
+					"tags": null
+				},
+				"delta": {
+					"serviceName": "delta",
+					"tags": null
+				},
+				"echo": {
+					"serviceName": "echo",
+					"tags": null
+				}
+			}
+		}
+	]
+}
