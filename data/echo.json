@@ -1,0 +1,19 @@
+{
+    "events": [
+        {
+            "event_id": 2,
+            "seqts": 2,
+            "event_type": "LOCAL",
+            "nodeId": "echo",
+            "hlc": 4,
+            "bitmap": "10000",
+            "offsets": "0000000000000000000000000000000000000000000000000000000000000010",
+            "counters": 0,
+            "offset_size": 3,
+            "epsilon": 2,
+            "sender": "echo",
+            "receiver": "echo",
+            "msg_body": "Increment(c)"
+        }
+    ]
+}

@@ -1,7 +1,5 @@
 import json
 
-from numpy import equal
-
 class Tracer:
 
     def __init__(self) -> None:

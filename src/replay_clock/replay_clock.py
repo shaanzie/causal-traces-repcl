@@ -10,6 +10,7 @@ class ReplayClock:
         self.readable_offsets = self.convert_to_readable_offsets(offset_size=offset_size, epsilon=epsilon)
         self.counters = counters
         self.vector_offsets = self.convert_to_vector_offsets(offset_size=offset_size, epsilon=epsilon)
+        self.epsilon = epsilon
         
 
     def convert_to_readable_offsets(self, offset_size: int, epsilon: int) -> list:
@@ -45,6 +46,10 @@ class ReplayClock:
                 vc.append(self.hlc - int(offset, 2))
 
         return vc
+    
+    def __add__(self, other: int):
+
+        return self.hlc + other*self.epsilon
     
     def __lt__(self, repcl: 'ReplayClock'):
         if(self.hlc < repcl.hlc):

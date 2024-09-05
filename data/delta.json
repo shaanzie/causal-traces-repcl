@@ -1,0 +1,49 @@
+{
+    "events": [
+        {
+            "event_id": 1,
+            "seqts": 2,
+            "event_type": "RECV",
+            "nodeId": "delta",
+            "hlc": 3,
+            "bitmap": "01100",
+            "offsets": "0000000000000000000000000000000000000000000000000000000000000001",
+            "counters": 0,
+            "offset_size": 3,
+            "epsilon": 2,
+            "sender": "delta",
+            "receiver": "charlie",
+            "msg_body": "Recv(m2)"
+        },
+        {
+            "event_id": 2,
+            "seqts": 3,
+            "event_type": "LOCAL",
+            "nodeId": "delta",
+            "hlc": 4,
+            "bitmap": "01100",
+            "offsets": "0000000000000000000000000000000000000000000000000000000000000010",
+            "counters": 0,
+            "offset_size": 3,
+            "epsilon": 2,
+            "sender": "delta",
+            "receiver": "delta",
+            "msg_body": "Increment(b)"
+        },
+        {
+            "event_id": 3,
+            "seqts": 4,
+            "event_type": "LOCAL",
+            "nodeId": "delta",
+            "hlc": 7,
+            "bitmap": "01100",
+            "offsets": "0000000000000000000000000000000000000000000000000000000000000101",
+            "counters": 0,
+            "offset_size": 3,
+            "epsilon": 2,
+            "sender": "delta",
+            "receiver": "delta",
+            "msg_body": "Decrement(b)"
+        }
+    ]
+}

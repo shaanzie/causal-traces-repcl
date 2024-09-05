@@ -3,8 +3,10 @@ from dash import Dash, html, dcc, Output, Input, callback, State
 import plotly.graph_objects as go
 import json
 
-from processor import FileProcessor
+from processor.processor import FileProcessor
+from schedule.candidate_traces import CandidateTraces
 from tracer.tracer import Tracer
+from tracer.new_tracer import NewTracer
 from schedule.schedule_tree import Forest
 
 from graphers.replayer import Replayer
@@ -20,19 +22,27 @@ meta = dict()
 # Holds the event list
 events = []
 
-def generate_metadata(args):
+def generate_metadata(num_procs: int):
     # Format nodes by IP
     # TODO: custom IP names should be specified by user
 
-    meta['num_procs'] = args.num_procs
+    meta['num_procs'] = num_procs
     meta['nodes'] = []
 
     # TODO: Change this to dynamic
     meta['xlim'] = 20
 
-    for i in range(args.num_procs):
-        meta['nodes'].append("10.1.1.{}".format(i + 1))
-        meta["10.1.1.{}".format(i + 1)] = i + 1
+    # TODO: Change for custom IP names
+    meta['nodes'] = ['alice', 'bob', 'charlie', 'delta', 'echo']
+    meta['alice'] = 1
+    meta['bob'] = 2
+    meta['charlie'] = 3
+    meta['delta'] = 4
+    meta['echo'] = 5
+
+    # for i in range(num_procs):
+    #     meta['nodes'].append("10.1.1.{}".format(i + 1))
+    #     meta["10.1.1.{}".format(i + 1)] = i + 1
 
 # Argument parser
 parser = argparse.ArgumentParser(
@@ -40,29 +50,40 @@ parser = argparse.ArgumentParser(
 )
 
 parser.add_argument('-n', '--num_procs', type=int, help='Number of processes in execution')
-parser.add_argument('-f', '--filename', help='Input the file to be graphed')
+parser.add_argument('-f', '--file', help='Input the folder of traces to be graphed')
+parser.add_argument('-v', '--csv', type=int, help='Toggle CSV input')
+parser.add_argument('-c', '--bug_depth', type=int, help='Bug Depth desired.')
 
 args = parser.parse_args()
 
-generate_metadata(args)
+generate_metadata(args.num_procs)
 
 processor = FileProcessor()
 
-events = processor.process_csv(args.filename)
+if(args.csv != 0):
+    events = processor.process_csv(args.file)
+else:
+    events = processor.process_dir(args.file)
     
+# print(events)
+
+# schedule = Forest()
+schedule = CandidateTraces()
+
+# schedule_tree = schedule.build_schedule_tree(grouped_events)
+
+# schedule.build_candidate_traces(schedule_tree)
+schedule.generate_candidate_traces(events)
+
 # Now we play the replay on the UNIX interface
 
-tracer = Tracer()
+# tracer = Tracer()
+tracer = NewTracer()
 
-grouped_events = tracer.order_events(events)
+# grouped_events = tracer.order_events(events)
 
-schedule = Forest()
-
-schedule_tree = schedule.build_schedule_tree(grouped_events)
-
-schedule.build_candidate_traces(schedule_tree)
-
-tracer.run_new_replay(events)
+# tracer.run_new_replay(events)
+tracer.run_replay(events, args.bug_depth)
 
 # Replayable Graph
 

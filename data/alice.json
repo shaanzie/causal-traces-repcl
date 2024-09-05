@@ -1,0 +1,49 @@
+{
+    "events": [
+        {
+            "event_id": 1,
+            "seqts": 1,
+            "event_type": "LOCAL",
+            "nodeId": "alice",
+            "hlc": 1,
+            "bitmap": "00001",
+            "offsets": "0000000000000000000000000000000000000000000000000000000000000000",
+            "counters": 0,
+            "offset_size": 3,
+            "epsilon": 2,
+            "sender": "alice",
+            "receiver": "alice",
+            "msg_body": "Increment(x)"
+        },
+        {
+            "event_id": 2,
+            "seqts": 2,
+            "event_type": "SEND",
+            "nodeId": "alice",
+            "hlc": 2,
+            "bitmap": "00001",
+            "offsets": "0000000000000000000000000000000000000000000000000000000000000000",
+            "counters": 0,
+            "offset_size": 3,
+            "epsilon": 2,
+            "sender": "alice",
+            "receiver": "bob",
+            "msg_body": "Send(m1)"
+        },
+        {
+            "event_id": 3,
+            "seqts": 3,
+            "event_type": "LOCAL",
+            "nodeId": "alice",
+            "hlc": 3,
+            "bitmap": "00001",
+            "offsets": "0000000000000000000000000000000000000000000000000000000000000000",
+            "counters": 0,
+            "offset_size": 3,
+            "epsilon": 2,
+            "sender": "alice",
+            "receiver": "alice",
+            "msg_body": "Decrement(x)"
+        }
+    ]
+}
