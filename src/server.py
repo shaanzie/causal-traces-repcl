@@ -53,6 +53,7 @@ parser.add_argument('-n', '--num_procs', type=int, help='Number of processes in 
 parser.add_argument('-f', '--file', help='Input the folder of traces to be graphed')
 parser.add_argument('-v', '--csv', type=int, help='Toggle CSV input')
 parser.add_argument('-c', '--bug_depth', type=int, help='Bug Depth desired.')
+parser.add_argument('-e', '--epsilon', type=int, help='Clock skew limit')
 
 args = parser.parse_args()
 
@@ -73,7 +74,8 @@ schedule = CandidateTraces()
 # schedule_tree = schedule.build_schedule_tree(grouped_events)
 
 # schedule.build_candidate_traces(schedule_tree)
-schedule.generate_candidate_traces(events)
+
+schedule.generate_candidate_traces(events, args.bug_depth, args.epsilon)
 
 # Now we play the replay on the UNIX interface
 
@@ -83,7 +85,7 @@ tracer = NewTracer()
 # grouped_events = tracer.order_events(events)
 
 # tracer.run_new_replay(events)
-tracer.run_replay(events, args.bug_depth)
+tracer.run_replay(events)
 
 # Replayable Graph
 

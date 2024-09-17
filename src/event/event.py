@@ -23,6 +23,16 @@ class Event:
             msg_body = self.msg_body
         )
     
+    def __eq__(self, event: 'Event') -> bool:
+        
+        return  self.event_id == event.event_id and \
+                self.seqts == event.seqts and \
+                self.event_type == event.event_type and \
+                self.event_time == event.event_time and \
+                self.sender == event.sender and \
+                self.receiver == event.receiver and \
+                self.msg_body == event.msg_body
+    
     def jsonify(self) -> str:
         return {
             "event_id": self.event_id,

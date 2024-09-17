@@ -15,9 +15,7 @@ class NewTracer:
 
         return events
 
-    def run_replay(self, events: dict, c: int):
-
-        num_traces = 1
+    def run_replay(self, events: dict):
     
         json_trace = dict()
         json_trace['trace'] = []
@@ -35,7 +33,7 @@ class NewTracer:
             equal_events = [sorted_nextEvent[0]]
 
             for event in sorted_nextEvent:
-                if event.event_time <= (sorted_nextEvent[0].event_time + c) and event != sorted_nextEvent[0]:
+                if event.event_time == sorted_nextEvent[0].event_time and event != sorted_nextEvent[0]:
                     equal_events.append(event)
 
             for event_1 in equal_events:
@@ -57,7 +55,6 @@ class NewTracer:
 
             else:
                 print("Concurrent events detected!")
-                num_traces *= len(equal_events)    
                 for idx in range(len(equal_events)):
                     print("{idx}. {event}".format(
                         idx = idx,
@@ -75,5 +72,5 @@ class NewTracer:
                 if len(replay_events[nodeId]) != 0:
                     nextEvent.append(replay_events[nodeId][0])
 
-        Trace_File = open('generated_trace_{}_{}.json'.format(c, num_traces), 'w')
+        Trace_File = open(r'generated_trace.json', 'w')
         Trace_File.write(json.dumps(json_trace))

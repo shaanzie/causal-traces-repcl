@@ -47,9 +47,9 @@ class ReplayClock:
 
         return vc
     
-    def __add__(self, other: int):
+    def within_epsilon(self, other: 'ReplayClock', c: int):
 
-        return self.hlc + other*self.epsilon
+        return self.hlc + c*self.epsilon >= other.hlc
     
     def __lt__(self, repcl: 'ReplayClock'):
         if(self.hlc < repcl.hlc):

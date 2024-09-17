@@ -1,12 +1,17 @@
 from copy import deepcopy
 import json
 
+from numpy import equal
+
+from event.event import Event
+
 class CandidateTraces:
 
     def __init__(self) -> None:
         
         print('Candidate Tracer initialized.')
 
+    # Sort events by node
     def sort_node_events(self, events: dict):
 
         for node in events.keys():
@@ -15,89 +20,194 @@ class CandidateTraces:
             events[node] = sorted_events 
 
         return events
+    
+    # Generate nextEvent list
+    def get_next_event_list(self, events: dict) -> list:
 
-    def generate_bug_depth_2_lhs(self, events: dict):
+        nextEvent = [events[node][0] for node in events.keys()]
 
-        lhs_trace = dict()
-        lhs_trace['trace'] = []
+        return nextEvent
+    
+    # Sort event lists by RepCl
+    def sort_event_list(self, event_list: list) -> list:
 
-        events = self.sort_node_events(events)
+        return sorted(event_list, key=lambda x: x.event_time)
 
-        replay_events = deepcopy(events)
+    # Remove events that are not equal
+    def get_equal_events(self, event_list: list):
 
-        nextEvent = [replay_events[node][0] for node in replay_events.keys()]
+        equal_events = [event_list[0]]
 
-        while len(nextEvent) != 0:
+        for event in event_list:
+            if event.event_time == event_list[0].event_time and event != event_list[0]:
+                equal_events.append(event)
 
-            sorted_nextEvent = sorted(nextEvent, key=lambda x: x.event_time)
+        for event_1 in equal_events:
+            for event_2 in equal_events:
+                if event_1.event_time > event_2.event_time:
+                    equal_events.remove(event_1)
 
-            equal_events = [sorted_nextEvent[0]]
+        return equal_events
+    
+    # Generate LHS trace
+    def generate_bug_depth_2_lhs(self, events: dict) -> list:
 
-            for event in sorted_nextEvent:
-                if event.event_time == sorted_nextEvent[0].event_time and event != sorted_nextEvent[0]:
-                    equal_events.append(event)
+        lhs_trace = []
 
-            for event_1 in equal_events:
-                for event_2 in equal_events:
-                    if event_1.event_time > event_2.event_time:
-                        equal_events.remove(event_1)
+        # Call by value
+        replayEvents = deepcopy(events)
 
-            lhs_trace['trace'].append(equal_events[0].jsonify())
-            # Remove first_event[0]
-
-            nodeId = equal_events[0].event_time.nodeId
-            nextEvent.remove(equal_events[0])
-            replay_events[nodeId].remove(equal_events[0])
-
-            if len(replay_events[nodeId]) != 0:
-                nextEvent.append(replay_events[nodeId][0])
-
-        Trace_File = open(r'candidate_trace_lhs.json', 'w')
-        Trace_File.write(json.dumps(lhs_trace))
-
-    def generate_bug_depth_2_rhs(self, events: dict):
-
-        rhs_trace = dict()
-        rhs_trace['trace'] = []
-
-        events = self.sort_node_events(events)
-
-        replay_events = deepcopy(events)
-
-        print(replay_events)
-
-        nextEvent = [replay_events[node][0] for node in replay_events.keys()]
+        # Get initial nextEvent
+        nextEvent = self.get_next_event_list(replayEvents)
 
         while len(nextEvent) != 0:
 
-            sorted_nextEvent = sorted(nextEvent, key=lambda x: x.event_time)
+            # Sort nextEvent
+            sortedNextEvent = self.sort_event_list(nextEvent)
 
-            equal_events = [sorted_nextEvent[0]]
+            # Get equalEvents
+            equalEvents = self.get_equal_events(sortedNextEvent)
 
-            for event in sorted_nextEvent:
-                if event.event_time == sorted_nextEvent[0].event_time and event != sorted_nextEvent[0]:
-                    equal_events.append(event)
+            # Append leftmost event
+            lhs_trace.append(equalEvents[0].jsonify())
 
-            for event_1 in equal_events:
-                for event_2 in equal_events:
-                    if event_1.event_time > event_2.event_time:
-                        equal_events.remove(event_1)
+            # Remove event from nextEvent
+            nextEvent.remove(equalEvents[0])
 
-            rhs_trace['trace'].append(equal_events[-1].jsonify())
-            # Remove first_event[0]
+            # Remove event from replayEvents
+            nodeId = equalEvents[0].event_time.nodeId
+            replayEvents[nodeId].remove(equalEvents[0])
 
-            nodeId = equal_events[-1].event_time.nodeId
-            nextEvent.remove(equal_events[-1])
-            replay_events[nodeId].remove(equal_events[-1])
+            # Add the next event from node
+            if len(replayEvents[nodeId]) != 0:
+                nextEvent.append(replayEvents[nodeId][0])
 
-            if len(replay_events[nodeId]) != 0:
-                nextEvent.append(replay_events[nodeId][0])
+        return lhs_trace
+    
+    # Generate RHS trace
+    def generate_bug_depth_2_rhs(self, events: dict) -> list:
 
-        Trace_File = open(r'candidate_trace_rhs.json', 'w')
-        Trace_File.write(json.dumps(rhs_trace))
+        rhs_trace = []
 
-    def generate_candidate_traces(self, events: dict):
+        # Call by value
+        replayEvents = deepcopy(events)
 
-        self.generate_bug_depth_2_lhs(events)
+        # Get initial nextEvent
+        nextEvent = self.get_next_event_list(replayEvents)
 
-        self.generate_bug_depth_2_rhs(events)
+        while len(nextEvent) != 0:
+
+            # Sort nextEvent
+            sortedNextEvent = self.sort_event_list(nextEvent)
+
+            # Get equalEvents
+            equalEvents = self.get_equal_events(sortedNextEvent)
+
+            # Append leftmost event
+            rhs_trace.append(equalEvents[-1].jsonify())
+
+            # Remove event from nextEvent
+            nextEvent.remove(equalEvents[-1])
+
+            # Remove event from replayEvents
+            nodeId = equalEvents[-1].event_time.nodeId
+            replayEvents[nodeId].remove(equalEvents[-1])
+
+            # Add the next event from node
+            if len(replayEvents[nodeId]) != 0:
+                nextEvent.append(replayEvents[nodeId][0])
+
+        return rhs_trace
+    
+
+    # Remove events out of cwnd
+    def remove_cwnd_equal_events(self, event_list: list, cwnd: int):
+
+        def within_window(event_1: Event, event_2: Event, cwnd: int):
+
+            return (abs(event_1.event_time.hlc - event_2.event_time.hlc) <= cwnd)
+        
+        sampled_event = event_list[0]
+
+        for event in event_list:
+            if not within_window(event, sampled_event, cwnd):
+                event_list.remove(event)
+
+        return event_list
+
+    # Generate all possible traces in a cwnd
+    def generate_bug_depth_c(self, events: dict, cwnd: int) -> list:
+
+        # Getting all possible paths through DFS
+        def dfs(events: dict, path: list, ne: list, cwnd: int):
+
+            # Call by value
+            replayEvents = deepcopy(events)
+            nextEvent = deepcopy(ne)
+
+            # If nextEvent is empty, we have reached a leaf
+            if len(nextEvent) == 0:
+                all_traces.append(path)
+                return 
+
+            # If nextEvent is not empty, sort it first
+            sortedNextEvent = self.sort_event_list(nextEvent)
+
+            # Get equalEvents
+            equalEvents = self.get_equal_events(sortedNextEvent)
+
+            # Remove events out of cwnd
+            cwndEqualEvents = self.remove_cwnd_equal_events(equalEvents, cwnd)
+
+            # Iterate through each equalEvent and consider each choice
+            for event_choice in cwndEqualEvents:
+
+                # Try each choice
+                path.append(event_choice.jsonify())
+
+                # Remove choice from nextEvent
+                nextEvent.remove(event_choice)
+
+                # Remove choice from replayEvents
+                nodeId = event_choice.event_time.nodeId
+                replayEvents[nodeId].remove(event_choice)
+
+                # Add next event
+                if len(replayEvents[nodeId]) != 0:
+                    nextEvent.append(replayEvents[nodeId][0])
+
+                # DFS on the choice
+                dfs(replayEvents, path, nextEvent, cwnd)
+
+
+        all_traces = []
+
+        # Call by value
+        replay_events = deepcopy(events)
+
+        # Get initial nextEvent
+        nextEvent = self.get_next_event_list(replay_events)
+
+        dfs(replay_events, [], nextEvent, cwnd)
+
+        return all_traces
+
+
+    def generate_candidate_traces(self, events: dict, c: int, epsilon: int):
+        
+        trace_json = dict()
+        trace_json['bug_depth_2'] = {}
+        trace_json['bug_depth_c'] = {}
+
+        trace_json['bug_depth_2']['lhs'] = self.generate_bug_depth_2_lhs(events)
+
+        trace_json['bug_depth_2']['rhs'] = self.generate_bug_depth_2_rhs(events)
+
+        candidate_traces = self.generate_bug_depth_c(events, c*epsilon)
+        
+        trace_json['bug_depth_c']['trace_list'] = candidate_traces
+        trace_json['bug_depth_c']['c'] = c*epsilon
+        trace_json['bug_depth_c']['n'] = len(candidate_traces)
+
+        trace_file = open('candidate_traces.json', 'w')
+        trace_file.write(json.dumps(trace_json))
