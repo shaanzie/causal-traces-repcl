@@ -2,6 +2,7 @@ import argparse
 from dash import Dash, html, dcc, Output, Input, callback, State
 import plotly.graph_objects as go
 import json
+from configparser import ConfigParser
 
 from processor.processor import FileProcessor
 from schedule.candidate_traces import CandidateTraces
@@ -16,55 +17,41 @@ from exporter.exporter import Exporter
 # External stylesheet link
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
-# Holds the metadata required to make the graph
-meta = dict()
-
 # Holds the event list
 events = []
 
-def generate_metadata(num_procs: int):
-    # Format nodes by IP
-    # TODO: custom IP names should be specified by user
+def generate_cfgdata(filename: str):
 
-    meta['num_procs'] = num_procs
-    meta['nodes'] = []
+    parser = ConfigParser()
+    parser.read(filenames=filename)
 
-    # TODO: Change this to dynamic
-    meta['xlim'] = 20
+    cfg = dict(parser.items('generic'))
 
-    # TODO: Change for custom IP names
-    meta['nodes'] = ['alice', 'bob', 'charlie', 'delta', 'echo']
-    meta['alice'] = 1
-    meta['bob'] = 2
-    meta['charlie'] = 3
-    meta['delta'] = 4
-    meta['echo'] = 5
+    cfg['nodes'] = cfg['nodes'].split(',')
 
-    # for i in range(num_procs):
-    #     meta['nodes'].append("10.1.1.{}".format(i + 1))
-    #     meta["10.1.1.{}".format(i + 1)] = i + 1
+    print('Configuration loaded:')
+    for key in cfg.keys():
+        print('{} = {}'.format(key, cfg[key]))
+
+    return cfg
 
 # Argument parser
 parser = argparse.ArgumentParser(
     prog="RepViz Graphical Interface Server"
 )
 
-parser.add_argument('-n', '--num_procs', type=int, help='Number of processes in execution')
-parser.add_argument('-f', '--file', help='Input the folder of traces to be graphed')
-parser.add_argument('-v', '--csv', type=int, help='Toggle CSV input')
-parser.add_argument('-c', '--bug_depth', type=int, help='Bug Depth desired.')
-parser.add_argument('-e', '--epsilon', type=int, help='Clock skew limit')
+parser.add_argument('-cfg', '--config', help='Configuration file')
 
 args = parser.parse_args()
 
-generate_metadata(args.num_procs)
+cfg = generate_cfgdata(args.config)
 
 processor = FileProcessor()
 
-if(args.csv != 0):
-    events = processor.process_csv(args.file)
+if(cfg['csv'] != '0'):
+    events = processor.process_csv(cfg['data'])
 else:
-    events = processor.process_dir(args.file)
+    events = processor.process_dir(cfg['data'])
     
 # print(events)
 
@@ -75,7 +62,7 @@ schedule = CandidateTraces()
 
 # schedule.build_candidate_traces(schedule_tree)
 
-schedule.generate_candidate_traces(events, args.bug_depth, args.epsilon)
+schedule.generate_candidate_traces(events, int(cfg['cwnd']), int(cfg['epsilon']))
 
 # Now we play the replay on the UNIX interface
 
@@ -99,21 +86,21 @@ exporter.convert_trace_to_lc(trace=trace['trace'])
 f = open(r'generated_trace.json', 'w')
 f.write(json.dumps(trace))
     
-swimlane_grapher = Replayer(meta, go.Figure())
+swimlane_grapher = Replayer(cfg, go.Figure())
 swimlane_grapher.generate_base_figure()
 
 f = open('candidate_traces.json')
 candidate_traces = json.load(f)
 
-candidate_grapher = Replayer(meta, go.Figure())
+candidate_grapher = Replayer(cfg, go.Figure())
 candidate_grapher.generate_base_figure()
 
 options = list(range(0, len(candidate_traces["candidate_traces"])))
 
-process_grapher = Replayer(meta, go.Figure())
+process_grapher = Replayer(cfg, go.Figure())
 process_grapher.generate_base_figure()
 
-process_options = meta["nodes"]
+process_options = cfg["nodes"]
 
 # Helper function to generate blank figures
 def blank_fig():
