@@ -4,7 +4,10 @@ import plotly.graph_objects as go
 import json
 from configparser import ConfigParser
 
-from processor.processor import FileProcessor
+import processor
+import processor.csv_processor
+import processor.json_processor
+import processor.processor
 from schedule.candidate_traces import CandidateTraces
 from tracer.tracer import Tracer
 from tracer.new_tracer import NewTracer
@@ -46,12 +49,10 @@ args = parser.parse_args()
 
 cfg = generate_cfgdata(args.config)
 
-processor = FileProcessor()
-
 if(cfg['csv'] != '0'):
-    events = processor.process_csv(cfg['data'])
+    events = processor.csv_processor.CSVProcessor(cfg).process_csv(cfg['data'])
 else:
-    events = processor.process_dir(cfg['data'])
+    events = processor.json_processor.JSONProcessor(cfg).process_dir(cfg['data'])
     
 # print(events)
 
