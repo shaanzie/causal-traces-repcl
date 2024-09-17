@@ -1,4 +1,6 @@
 import json
+from copy import deepcopy
+from utils.utils import sort_event_list, sort_node_events, get_equal_events, get_next_event_list
 
 class NewTracer:
 
@@ -6,71 +8,53 @@ class NewTracer:
         
         print('Tracer initialized.')
 
-    def sort_node_events(self, events: dict):
-
-        for node in events.keys():
-
-            sorted_events = sorted(events[node], key=lambda x: x.event_time)
-            events[node] = sorted_events
-
-        return events
-
     def run_replay(self, events: dict):
-    
-        json_trace = dict()
-        json_trace['trace'] = []
 
-        events = self.sort_node_events(events)
+        trace = []
 
-        replay_events = events
+        # Call by value
+        replayEvents = deepcopy(events)
 
-        nextEvent = [replay_events[node][0] for node in replay_events.keys()]
+        # Get initial nextEvent
+        nextEvent = get_next_event_list(replayEvents)
 
         while len(nextEvent) != 0:
 
-            sorted_nextEvent = sorted(nextEvent, key=lambda x: x.event_time)
+            # Sort nextEvent
+            sortedNextEvent = sort_event_list(nextEvent)
 
-            equal_events = [sorted_nextEvent[0]]
+            # Get equalEvents
+            equalEvents = get_equal_events(sortedNextEvent)
 
-            for event in sorted_nextEvent:
-                if event.event_time == sorted_nextEvent[0].event_time and event != sorted_nextEvent[0]:
-                    equal_events.append(event)
-
-            for event_1 in equal_events:
-                for event_2 in equal_events:
-                    if event_1.event_time > event_2.event_time:
-                        equal_events.remove(event_1)
-
-            if len(equal_events) == 1:
-                print(equal_events[0])
-                json_trace['trace'].append(equal_events[0].jsonify())
+            if len(equalEvents) == 1:
+                print(equalEvents[0])
+                trace.append(equalEvents[0].jsonify())
                 # Remove first_event[0]
 
-                nodeId = equal_events[0].event_time.nodeId
-                nextEvent.remove(equal_events[0])
-                replay_events[nodeId].remove(equal_events[0])
+                nodeId = equalEvents[0].event_time.nodeId
+                nextEvent.remove(equalEvents[0])
+                replayEvents[nodeId].remove(equalEvents[0])
 
-                if len(replay_events[nodeId]) != 0:
-                    nextEvent.append(replay_events[nodeId][0])
+                if len(replayEvents[nodeId]) != 0:
+                    nextEvent.append(replayEvents[nodeId][0])
 
             else:
                 print("Concurrent events detected!")
-                for idx in range(len(equal_events)):
+                for idx in range(len(equalEvents)):
                     print("{idx}. {event}".format(
                         idx = idx,
-                        event = equal_events[idx]
+                        event = equalEvents[idx]
                     ))
                 event_id = int(input('Please choose the event to replay: '))
-                print(equal_events[event_id])
-                json_trace['trace'].append(equal_events[event_id].jsonify())
-                # Remove first_event[event_id]
+                print(equalEvents[event_id])
+                trace.append(equalEvents[event_id].jsonify())
 
-                nodeId = equal_events[event_id].event_time.nodeId
-                nextEvent.remove(equal_events[event_id])
-                replay_events[nodeId].remove(equal_events[event_id])
+                nodeId = equalEvents[event_id].event_time.nodeId
+                nextEvent.remove(equalEvents[event_id])
+                replayEvents[nodeId].remove(equalEvents[event_id])
 
-                if len(replay_events[nodeId]) != 0:
-                    nextEvent.append(replay_events[nodeId][0])
+                if len(replayEvents[nodeId]) != 0:
+                    nextEvent.append(replayEvents[nodeId][0])
 
         Trace_File = open(r'generated_trace.json', 'w')
-        Trace_File.write(json.dumps(json_trace))
+        Trace_File.write(json.dumps(trace))

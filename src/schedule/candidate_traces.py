@@ -1,7 +1,6 @@
 from copy import deepcopy
 import json
-
-from numpy import equal
+from utils.utils import get_equal_events, get_next_event_list, sort_event_list, sort_node_events
 
 from event.event import Event
 
@@ -11,43 +10,7 @@ class CandidateTraces:
         
         print('Candidate Tracer initialized.')
 
-    # Sort events by node
-    def sort_node_events(self, events: dict):
-
-        for node in events.keys():
-
-            sorted_events = sorted(events[node], key=lambda x: x.event_time)
-            events[node] = sorted_events 
-
-        return events
     
-    # Generate nextEvent list
-    def get_next_event_list(self, events: dict) -> list:
-
-        nextEvent = [events[node][0] for node in events.keys()]
-
-        return nextEvent
-    
-    # Sort event lists by RepCl
-    def sort_event_list(self, event_list: list) -> list:
-
-        return sorted(event_list, key=lambda x: x.event_time)
-
-    # Remove events that are not equal
-    def get_equal_events(self, event_list: list):
-
-        equal_events = [event_list[0]]
-
-        for event in event_list:
-            if event.event_time == event_list[0].event_time and event != event_list[0]:
-                equal_events.append(event)
-
-        for event_1 in equal_events:
-            for event_2 in equal_events:
-                if event_1.event_time > event_2.event_time:
-                    equal_events.remove(event_1)
-
-        return equal_events
     
     # Generate LHS trace
     def generate_bug_depth_2_lhs(self, events: dict) -> list:
@@ -58,15 +21,15 @@ class CandidateTraces:
         replayEvents = deepcopy(events)
 
         # Get initial nextEvent
-        nextEvent = self.get_next_event_list(replayEvents)
+        nextEvent = get_next_event_list(replayEvents)
 
         while len(nextEvent) != 0:
 
             # Sort nextEvent
-            sortedNextEvent = self.sort_event_list(nextEvent)
+            sortedNextEvent = sort_event_list(nextEvent)
 
             # Get equalEvents
-            equalEvents = self.get_equal_events(sortedNextEvent)
+            equalEvents = get_equal_events(sortedNextEvent)
 
             # Append leftmost event
             lhs_trace.append(equalEvents[0].jsonify())
@@ -93,15 +56,15 @@ class CandidateTraces:
         replayEvents = deepcopy(events)
 
         # Get initial nextEvent
-        nextEvent = self.get_next_event_list(replayEvents)
+        nextEvent = get_next_event_list(replayEvents)
 
         while len(nextEvent) != 0:
 
             # Sort nextEvent
-            sortedNextEvent = self.sort_event_list(nextEvent)
+            sortedNextEvent = sort_event_list(nextEvent)
 
             # Get equalEvents
-            equalEvents = self.get_equal_events(sortedNextEvent)
+            equalEvents = get_equal_events(sortedNextEvent)
 
             # Append leftmost event
             rhs_trace.append(equalEvents[-1].jsonify())
@@ -151,10 +114,10 @@ class CandidateTraces:
                 return 
 
             # If nextEvent is not empty, sort it first
-            sortedNextEvent = self.sort_event_list(nextEvent)
+            sortedNextEvent = sort_event_list(nextEvent)
 
             # Get equalEvents
-            equalEvents = self.get_equal_events(sortedNextEvent)
+            equalEvents = get_equal_events(sortedNextEvent)
 
             # Remove events out of cwnd
             cwndEqualEvents = self.remove_cwnd_equal_events(equalEvents, cwnd)
@@ -186,7 +149,7 @@ class CandidateTraces:
         replay_events = deepcopy(events)
 
         # Get initial nextEvent
-        nextEvent = self.get_next_event_list(replay_events)
+        nextEvent = get_next_event_list(replay_events)
 
         dfs(replay_events, [], nextEvent, cwnd)
 
