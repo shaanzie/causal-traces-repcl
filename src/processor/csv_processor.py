@@ -7,6 +7,8 @@ from replay_clock.replay_clock import ReplayClock
 class CSVProcessor(FileProcessor):
 
     def __init__(self, cfg: dict) -> None:
+
+        cfg['columns'] = cfg['columns'].split(',')
         
         super().__init__(cfg)
 
@@ -35,7 +37,7 @@ class CSVProcessor(FileProcessor):
                 ),
                 sender=row['NODE_1'],
                 receiver=row['NODE_2'],
-                msg_body=row['MSG_BODY']
+                msg_body='dummy'
             )
             event_list.append(e)
             event_id += 1

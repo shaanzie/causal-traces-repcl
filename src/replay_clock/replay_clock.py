@@ -47,14 +47,10 @@ class ReplayClock:
 
         return vc
     
-    def within_epsilon(self, other: 'ReplayClock', c: int):
-
-        return self.hlc + c*self.epsilon >= other.hlc
-    
     def __lt__(self, repcl: 'ReplayClock'):
-        if(self.hlc < repcl.hlc):
+        if(self.hlc + self.epsilon < repcl.hlc):
             return True
-        elif(self.hlc > repcl.hlc):
+        elif(self.hlc > repcl.hlc + self.epsilon):
             return False
         else:
             for i, j in zip(self.vector_offsets, repcl.vector_offsets):
@@ -66,9 +62,9 @@ class ReplayClock:
 
     def __gt__(self, repcl: 'ReplayClock'):
         
-        if(self.hlc > repcl.hlc):
+        if(self.hlc > repcl.hlc + self.epsilon):
             return True
-        elif(self.hlc < repcl.hlc):
+        elif(self.hlc + self.epsilon < repcl.hlc):
             return False
         else:
             for i, j in zip(self.vector_offsets, repcl.vector_offsets):
@@ -81,12 +77,6 @@ class ReplayClock:
     def __eq__(self, repcl: 'ReplayClock'):
         
         return not(self < repcl) and not(repcl < self)
-
-    def __le__(self, repcl: 'ReplayClock'):
-        return self < repcl or self == repcl
-
-    def __ge__(self, repcl: 'ReplayClock'):
-        return self > repcl or self == repcl
     
     def __repr__(self) -> str:
         

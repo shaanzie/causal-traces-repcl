@@ -32,10 +32,6 @@ def generate_cfgdata(filename: str):
 
     cfg['nodes'] = cfg['nodes'].split(',')
 
-    print('Configuration loaded:')
-    for key in cfg.keys():
-        print('{} = {}'.format(key, cfg[key]))
-
     return cfg
 
 # Argument parser
@@ -63,17 +59,20 @@ schedule = CandidateTraces()
 
 # schedule.build_candidate_traces(schedule_tree)
 
-schedule.generate_candidate_traces(events, int(cfg['cwnd']), int(cfg['epsilon']))
+# schedule.generate_candidate_traces(events, int(cfg['cwnd']))
+
+for cwnd in range(0, 21):
+    schedule.generate_candidate_traces(events, cwnd)
 
 # Now we play the replay on the UNIX interface
 
 # tracer = Tracer()
-tracer = NewTracer()
+# tracer = NewTracer()
 
 # grouped_events = tracer.order_events(events)
 
 # tracer.run_new_replay(events)
-tracer.run_replay(events)
+# tracer.run_replay(events)
 
 # Replayable Graph
 

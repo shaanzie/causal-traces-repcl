@@ -32,6 +32,9 @@ def get_equal_events(event_list: list):
     for event_1 in equal_events:
         for event_2 in equal_events:
             if event_1.event_time > event_2.event_time:
-                equal_events.remove(event_1)
+                try:
+                    equal_events.remove(event_1)
+                except:
+                    pass
 
     return equal_events

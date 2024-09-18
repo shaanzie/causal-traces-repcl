@@ -9,8 +9,6 @@ class CandidateTraces:
     def __init__(self) -> None:
         
         print('Candidate Tracer initialized.')
-
-    
     
     # Generate LHS trace
     def generate_bug_depth_2_lhs(self, events: dict) -> list:
@@ -88,7 +86,7 @@ class CandidateTraces:
 
         def within_window(event_1: Event, event_2: Event, cwnd: int):
 
-            return (abs(event_1.event_time.hlc - event_2.event_time.hlc) <= cwnd)
+            return (abs(event_1.event_time.hlc - event_2.event_time.hlc) <= cwnd*event_1.event_time.epsilon)
         
         sampled_event = event_list[0]
 
@@ -107,6 +105,7 @@ class CandidateTraces:
             # Call by value
             replayEvents = deepcopy(events)
             nextEvent = deepcopy(ne)
+            path = deepcopy(path)
 
             # If nextEvent is empty, we have reached a leaf
             if len(nextEvent) == 0:
@@ -156,7 +155,7 @@ class CandidateTraces:
         return all_traces
 
 
-    def generate_candidate_traces(self, events: dict, c: int, epsilon: int):
+    def generate_candidate_traces(self, events: dict, c: int):
         
         trace_json = dict()
         trace_json['bug_depth_2'] = {}
@@ -166,11 +165,17 @@ class CandidateTraces:
 
         trace_json['bug_depth_2']['rhs'] = self.generate_bug_depth_2_rhs(events)
 
-        candidate_traces = self.generate_bug_depth_c(events, c*epsilon)
+        candidate_traces = self.generate_bug_depth_c(events, c)
         
         trace_json['bug_depth_c']['trace_list'] = candidate_traces
-        trace_json['bug_depth_c']['c'] = c*epsilon
+        trace_json['bug_depth_c']['c'] = c
         trace_json['bug_depth_c']['n'] = len(candidate_traces)
+
+        print('cwnd: {}, num_traces: {}, num_events: {}'.format(
+            c,
+            len(candidate_traces),
+            len(candidate_traces[-1])
+        ))
 
         trace_file = open('candidate_traces.json', 'w')
         trace_file.write(json.dumps(trace_json))
