@@ -62,7 +62,7 @@ schedule = CandidateTraces()
 # schedule.generate_candidate_traces(events, int(cfg['cwnd']))
 
 for cwnd in range(0, 21):
-    schedule.generate_candidate_traces(events, cwnd)
+    schedule.generate_candidate_traces(events, cwnd/10)
 
 # Now we play the replay on the UNIX interface
 

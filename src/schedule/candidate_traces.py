@@ -82,9 +82,9 @@ class CandidateTraces:
     
 
     # Remove events out of cwnd
-    def remove_cwnd_equal_events(self, event_list: list, cwnd: int):
+    def remove_cwnd_equal_events(self, event_list: list, cwnd: float):
 
-        def within_window(event_1: Event, event_2: Event, cwnd: int):
+        def within_window(event_1: Event, event_2: Event, cwnd: float):
 
             return (abs(event_1.event_time.hlc - event_2.event_time.hlc) <= cwnd*event_1.event_time.epsilon)
         
@@ -97,10 +97,10 @@ class CandidateTraces:
         return event_list
 
     # Generate all possible traces in a cwnd
-    def generate_bug_depth_c(self, events: dict, cwnd: int) -> list:
+    def generate_bug_depth_c(self, events: dict, cwnd: float) -> list:
 
         # Getting all possible paths through DFS
-        def dfs(events: dict, path: list, ne: list, cwnd: int):
+        def dfs(events: dict, path: list, ne: list, cwnd: float):
 
             # Call by value
             replayEvents = deepcopy(events)
@@ -155,7 +155,7 @@ class CandidateTraces:
         return all_traces
 
 
-    def generate_candidate_traces(self, events: dict, c: int):
+    def generate_candidate_traces(self, events: dict, c: float):
         
         trace_json = dict()
         trace_json['bug_depth_2'] = {}
