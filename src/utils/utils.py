@@ -1,3 +1,6 @@
+from event.event import Event
+from collections import Counter
+
 # Sort events by node
 def sort_node_events(events: dict):
 
@@ -11,7 +14,7 @@ def sort_node_events(events: dict):
 # Generate nextEvent list
 def get_next_event_list(events: dict) -> list:
 
-    nextEvent = [events[node][0] for node in events.keys()]
+    nextEvent = [events[node][0] for node in events.keys() if len(events[node]) != 0]
 
     return nextEvent
 
@@ -38,3 +41,28 @@ def get_equal_events(event_list: list):
                     pass
 
     return equal_events
+
+def in_window(event: Event, window_start: int, window_end: int):
+
+    return event.event_time.hlc > window_start and event.event_time.hlc < window_end
+
+
+def filter_events(replay_events: dict, window_start: int, window_end: int):
+
+    filtered_dict = dict()
+
+    for key in replay_events.keys():
+
+        filtered_dict[key] = list()
+
+        for event in replay_events[key]:
+
+            if in_window(event, window_start, window_end):
+
+                filtered_dict[key].append(event)
+
+    for key in replay_events.keys():
+        if key in filtered_dict:
+            replay_events[key] = [item for item in replay_events[key] if item not in filtered_dict[key]]
+
+    return filtered_dict

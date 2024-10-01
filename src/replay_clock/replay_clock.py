@@ -48,6 +48,10 @@ class ReplayClock:
         return vc
     
     def __lt__(self, repcl: 'ReplayClock'):
+
+        if self.nodeId == repcl.nodeId:
+            return self.hlc < repcl.hlc
+
         if(self.hlc + self.epsilon < repcl.hlc):
             return True
         elif(self.hlc > repcl.hlc + self.epsilon):
@@ -61,6 +65,9 @@ class ReplayClock:
             return False
 
     def __gt__(self, repcl: 'ReplayClock'):
+
+        if self.nodeId == repcl.nodeId:
+            return self.hlc > repcl.hlc
         
         if(self.hlc > repcl.hlc + self.epsilon):
             return True

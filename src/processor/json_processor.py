@@ -11,7 +11,7 @@ class JSONProcessor(FileProcessor):
     def __init__(self, cfg: dict) -> None:
         
         super().__init__(cfg)
-        print(cfg)
+        # print(cfg)
 
     def convert_raw_to_list(self, raw_events: dict):
 

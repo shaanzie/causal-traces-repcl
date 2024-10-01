@@ -1,6 +1,7 @@
 from copy import deepcopy
 import json
-from utils.utils import get_equal_events, get_next_event_list, sort_event_list, sort_node_events
+import trace
+from utils.utils import get_equal_events, get_next_event_list, sort_event_list, sort_node_events, filter_events
 
 from event.event import Event
 
@@ -8,7 +9,8 @@ class CandidateTraces:
 
     def __init__(self) -> None:
         
-        print('Candidate Tracer initialized.')
+        # print('Candidate Tracer initialized.')
+        pass
     
     # Generate LHS trace
     def generate_bug_depth_2_lhs(self, events: dict) -> list:
@@ -82,9 +84,9 @@ class CandidateTraces:
     
 
     # Remove events out of cwnd
-    def remove_cwnd_equal_events(self, event_list: list, cwnd: float):
+    def remove_cwnd_equal_events(self, event_list: list, cwnd: int):
 
-        def within_window(event_1: Event, event_2: Event, cwnd: float):
+        def within_window(event_1: Event, event_2: Event, cwnd: int):
 
             return (abs(event_1.event_time.hlc - event_2.event_time.hlc) <= cwnd*event_1.event_time.epsilon)
         
@@ -97,10 +99,10 @@ class CandidateTraces:
         return event_list
 
     # Generate all possible traces in a cwnd
-    def generate_bug_depth_c(self, events: dict, cwnd: float) -> list:
+    def generate_bug_depth_c(self, events: dict, cwnd: int) -> list:
 
         # Getting all possible paths through DFS
-        def dfs(events: dict, path: list, ne: list, cwnd: float):
+        def dfs(events: dict, path: list, ne: list, cwnd: int):
 
             # Call by value
             replayEvents = deepcopy(events)
@@ -155,7 +157,94 @@ class CandidateTraces:
         return all_traces
 
 
-    def generate_candidate_traces(self, events: dict, c: float):
+    def generate_bug_depth_cwnd(self, events: dict, cwnd: int, epsilon: int):
+
+        def process_window(events: dict, window_start: int, cwnd: int, seq: int, type: int):
+
+            # Getting all possible paths through DFS
+            def dfs(replayEvents: dict, path: list, nextEvent: list):
+
+                # If nextEvent is empty, we have reached a leaf
+                if len(nextEvent) == 0:
+                    window_traces.append(deepcopy(path))
+                    return 
+            
+
+                # Iterate through each equalEvent and consider each choice
+                for event_choice in get_equal_events(nextEvent):
+
+                    # Try each choice
+                    path.append(event_choice.jsonify())
+
+                    # Remove choice from nextEvent
+                    nextEvent.remove(event_choice)
+
+                    # Remove choice from replayEvents
+                    replayEvents[event_choice.event_time.nodeId].remove(event_choice)
+
+                    # Add next event
+                    if len(replayEvents[event_choice.event_time.nodeId]) != 0: 
+
+                        # Get the next event from the replayEvents
+                        nextEvent.append(replayEvents[event_choice.event_time.nodeId][0])
+                        # If nextEvent is not empty, sort it first
+                        nextEvent = sort_event_list(nextEvent)
+
+                    # DFS on the choice
+                    dfs(deepcopy(replayEvents), deepcopy(path), deepcopy(nextEvent))
+
+                    
+                    # # Restore choice from nextEvent
+                    # nextEvent.append(event_choice)
+
+                    # Restore choice from replayEvents
+                    replayEvents[event_choice.event_time.nodeId].append(event_choice)
+                    replayEvents[event_choice.event_time.nodeId] = sort_event_list(replayEvents[event_choice.event_time.nodeId])
+
+                    nextEvent = get_next_event_list(replayEvents)
+                    nextEvent = sort_event_list(nextEvent)
+
+                    path.pop()
+
+
+            window_traces = []
+
+            all_traces[type] = dict()
+
+            while(not all(value == [] for value in events.values())):
+        
+                filtered_events = filter_events(events, window_start, window_start + cwnd)
+
+                nextEvent = get_next_event_list(filtered_events)
+
+                dfs(filtered_events, [], deepcopy(nextEvent))
+
+                window_start += cwnd
+
+                all_traces[type][seq] = deepcopy(window_traces)
+
+                window_traces.clear()
+
+                seq += 1
+
+
+        all_traces = dict()
+
+        process_window(deepcopy(events), 0, cwnd*epsilon, 0, 'L')
+
+        process_window(deepcopy(events), -(cwnd*epsilon)/2, cwnd*epsilon, 0, 'R')
+        
+        return all_traces
+    
+    def get_number_of_paths(self, traces: dict):
+
+        n_paths = 1
+        for trace in traces.values():
+            n_paths *= len(trace)
+
+        return n_paths
+
+    def generate_candidate_traces(self, events: dict, c: int):
         
         trace_json = dict()
         trace_json['bug_depth_2'] = {}
@@ -165,16 +254,24 @@ class CandidateTraces:
 
         trace_json['bug_depth_2']['rhs'] = self.generate_bug_depth_2_rhs(events)
 
-        candidate_traces = self.generate_bug_depth_c(events, c)
-        
-        trace_json['bug_depth_c']['trace_list'] = candidate_traces
-        trace_json['bug_depth_c']['c'] = c
-        trace_json['bug_depth_c']['n'] = len(candidate_traces)
+        event_list = get_next_event_list(events)
+        epsilon = event_list[0].event_time.epsilon
 
-        print('cwnd: {}, num_traces: {}, num_events: {}'.format(
+        all_traces = self.generate_bug_depth_cwnd(events, c, epsilon)
+
+        n_paths_l = self.get_number_of_paths(all_traces['L'])
+        n_paths_r = self.get_number_of_paths(all_traces['R'])
+        
+        trace_json['bug_depth_c']['trace_list'] = all_traces
+        trace_json['bug_depth_c']['cwnd'] = c*epsilon
+        trace_json['bug_depth_c']['n_left'] = n_paths_l
+        trace_json['bug_depth_c']['n_right'] = n_paths_r
+
+        print('{},{},{},{}'.format(
             c,
-            len(candidate_traces),
-            len(candidate_traces[-1])
+            epsilon,
+            n_paths_l,
+            n_paths_r
         ))
 
         trace_file = open('candidate_traces.json', 'w')

@@ -17,6 +17,9 @@ from graphers.replayer import Replayer
 
 from exporter.exporter import Exporter
 
+import warnings
+warnings.filterwarnings("ignore")
+
 # External stylesheet link
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
@@ -61,8 +64,8 @@ schedule = CandidateTraces()
 
 # schedule.generate_candidate_traces(events, int(cfg['cwnd']))
 
-for cwnd in range(0, 21):
-    schedule.generate_candidate_traces(events, cwnd/10)
+for cwnd in range(1, 4):
+    schedule.generate_candidate_traces(events, cwnd)
 
 # Now we play the replay on the UNIX interface
 
@@ -76,172 +79,172 @@ for cwnd in range(0, 21):
 
 # Replayable Graph
 
-f = open('generated_trace.json')
-trace = json.load(f)
-f.close()
+# f = open('generated_trace.json')
+# trace = json.load(f)
+# f.close()
 
-exporter = Exporter()
-exporter.convert_trace_to_lc(trace=trace['trace'])
+# exporter = Exporter()
+# exporter.convert_trace_to_lc(trace=trace['trace'])
 
-f = open(r'generated_trace.json', 'w')
-f.write(json.dumps(trace))
+# f = open(r'generated_trace.json', 'w')
+# f.write(json.dumps(trace))
     
-swimlane_grapher = Replayer(cfg, go.Figure())
-swimlane_grapher.generate_base_figure()
+# swimlane_grapher = Replayer(cfg, go.Figure())
+# swimlane_grapher.generate_base_figure()
 
-f = open('candidate_traces.json')
-candidate_traces = json.load(f)
+# f = open('candidate_traces.json')
+# candidate_traces = json.load(f)
 
-candidate_grapher = Replayer(cfg, go.Figure())
-candidate_grapher.generate_base_figure()
+# candidate_grapher = Replayer(cfg, go.Figure())
+# candidate_grapher.generate_base_figure()
 
-options = list(range(0, len(candidate_traces["candidate_traces"])))
+# options = list(range(0, len(candidate_traces["candidate_traces"])))
 
-process_grapher = Replayer(cfg, go.Figure())
-process_grapher.generate_base_figure()
+# process_grapher = Replayer(cfg, go.Figure())
+# process_grapher.generate_base_figure()
 
-process_options = cfg["nodes"]
+# process_options = cfg["nodes"]
 
-# Helper function to generate blank figures
-def blank_fig():
-    fig = go.Figure(go.Scatter(x=[], y=[]))
-    fig.update_layout(template=None)
-    fig.update_xaxes(showgrid=False, showticklabels=False, zeroline=False)
-    fig.update_yaxes(showgrid=False, showticklabels=False, zeroline=False)
-    return fig
+# # Helper function to generate blank figures
+# def blank_fig():
+#     fig = go.Figure(go.Scatter(x=[], y=[]))
+#     fig.update_layout(template=None)
+#     fig.update_xaxes(showgrid=False, showticklabels=False, zeroline=False)
+#     fig.update_yaxes(showgrid=False, showticklabels=False, zeroline=False)
+#     return fig
 
-# Initialize app
-app = Dash(external_stylesheets=external_stylesheets)
+# # Initialize app
+# app = Dash(external_stylesheets=external_stylesheets)
 
-# Define app layout
-app.layout = [
+# # Define app layout
+# app.layout = [
 
-    html.Div(children='RepViz Graphical Interface'),
-    html.Div(id='swimlane-graph-objects', children=[
-        html.Button('Replay Event', id='replay-button', n_clicks=0),
-        dcc.ConfirmDialog(id='confirm', message='No more events to replay'),
-        dcc.Graph(figure=swimlane_grapher.get_figure(), id='swimlane', style={'width': '100%', 'height': '90vh'}, animate=False, clear_on_unhover=True),
-        html.Div(id='user-log')
-    ]),
-    html.Div(id='candidate-graph-holder', children=[
-        dcc.Dropdown(options=options, placeholder="Select a trace", id="trace-selector"),
-        html.Button('Replay Candidate Trace Event', id='candidate-replay-button', n_clicks=0),
-        html.Button('Reset Graph', id='candidate-reset-button', n_clicks=0),
-        dcc.ConfirmDialog(id='candidate-confirm', message='No more events to replay'),
-        dcc.Graph(figure=candidate_grapher.get_figure(), id='candidate', style={'width': '100%', 'height': '90vh'}, animate=False),
-        html.Div(id='candidate-log'),
-    ]),
-    html.Div(id='process-graph-holder', children=[
-        dcc.Dropdown(options=options, placeholder="Select a trace", id="process-trace-selector"),
-        dcc.Dropdown(options=process_options, placeholder="Select a process", id="process-selector"),
-        html.Button('Replay Process Event', id='process-replay-button', n_clicks=0),
-        html.Button('Reset Graph', id='process-reset-button', n_clicks=0),
-        dcc.ConfirmDialog(id='process-confirm', message='No more events to replay'),
-        dcc.Graph(figure=process_grapher.get_figure(), id='process', style={'width': '100%', 'height': '90vh'}, animate=False),
-        html.Div(id='process-log'),
-    ]),
-]
+#     html.Div(children='RepViz Graphical Interface'),
+#     html.Div(id='swimlane-graph-objects', children=[
+#         html.Button('Replay Event', id='replay-button', n_clicks=0),
+#         dcc.ConfirmDialog(id='confirm', message='No more events to replay'),
+#         dcc.Graph(figure=swimlane_grapher.get_figure(), id='swimlane', style={'width': '100%', 'height': '90vh'}, animate=False, clear_on_unhover=True),
+#         html.Div(id='user-log')
+#     ]),
+#     html.Div(id='candidate-graph-holder', children=[
+#         dcc.Dropdown(options=options, placeholder="Select a trace", id="trace-selector"),
+#         html.Button('Replay Candidate Trace Event', id='candidate-replay-button', n_clicks=0),
+#         html.Button('Reset Graph', id='candidate-reset-button', n_clicks=0),
+#         dcc.ConfirmDialog(id='candidate-confirm', message='No more events to replay'),
+#         dcc.Graph(figure=candidate_grapher.get_figure(), id='candidate', style={'width': '100%', 'height': '90vh'}, animate=False),
+#         html.Div(id='candidate-log'),
+#     ]),
+#     html.Div(id='process-graph-holder', children=[
+#         dcc.Dropdown(options=options, placeholder="Select a trace", id="process-trace-selector"),
+#         dcc.Dropdown(options=process_options, placeholder="Select a process", id="process-selector"),
+#         html.Button('Replay Process Event', id='process-replay-button', n_clicks=0),
+#         html.Button('Reset Graph', id='process-reset-button', n_clicks=0),
+#         dcc.ConfirmDialog(id='process-confirm', message='No more events to replay'),
+#         dcc.Graph(figure=process_grapher.get_figure(), id='process', style={'width': '100%', 'height': '90vh'}, animate=False),
+#         html.Div(id='process-log'),
+#     ]),
+# ]
 
-# Iterator for event list
-event_list_iterator = 0
-@callback(
-    Output('swimlane', 'figure'),
-    Output('user-log', 'children'),
-    Output('confirm', 'displayed'),
-    Input('replay-button', 'n_clicks'),
-    prevent_initial_call=True
-)
-def add_next_event(n_clicks: int):
+# # Iterator for event list
+# event_list_iterator = 0
+# @callback(
+#     Output('swimlane', 'figure'),
+#     Output('user-log', 'children'),
+#     Output('confirm', 'displayed'),
+#     Input('replay-button', 'n_clicks'),
+#     prevent_initial_call=True
+# )
+# def add_next_event(n_clicks: int):
 
-    global event_list_iterator
+#     global event_list_iterator
 
-    if event_list_iterator >= len(trace['trace']):
-        return swimlane_grapher.get_figure(), [], 1
+#     if event_list_iterator >= len(trace['trace']):
+#         return swimlane_grapher.get_figure(), [], 1
 
-    event = trace['trace'][event_list_iterator]
+#     event = trace['trace'][event_list_iterator]
 
-    dialog = 0
+#     dialog = 0
 
-    if n_clicks > 0:
-        swimlane_grapher.add_event(event=event, json_trace=trace)
-        div = html.Div(children='{}'.format(event))
-        event_list_iterator += 1
+#     if n_clicks > 0:
+#         swimlane_grapher.add_event(event=event, json_trace=trace)
+#         div = html.Div(children='{}'.format(event))
+#         event_list_iterator += 1
 
-    return swimlane_grapher.get_figure(), [div], dialog
+#     return swimlane_grapher.get_figure(), [div], dialog
 
-# Iterator for event list
-candidate_list_iterator = 0
-@callback(
-    Output('candidate', 'figure'),
-    Output('candidate-log', 'children'),
-    Output('candidate-confirm', 'displayed'),
-    Input('candidate-replay-button', 'n_clicks'),
-    Input('trace-selector', 'value'),
-    prevent_initial_call=True
-)
-def update_candidate_figure(n_clicks, value):
+# # Iterator for event list
+# candidate_list_iterator = 0
+# @callback(
+#     Output('candidate', 'figure'),
+#     Output('candidate-log', 'children'),
+#     Output('candidate-confirm', 'displayed'),
+#     Input('candidate-replay-button', 'n_clicks'),
+#     Input('trace-selector', 'value'),
+#     prevent_initial_call=True
+# )
+# def update_candidate_figure(n_clicks, value):
 
-    global candidate_list_iterator
+#     global candidate_list_iterator
 
-    trace = candidate_traces["candidate_traces"][value]
+#     trace = candidate_traces["candidate_traces"][value]
 
-    if candidate_list_iterator >= len(trace['trace']):
-        return candidate_grapher.get_figure(), [], 1
+#     if candidate_list_iterator >= len(trace['trace']):
+#         return candidate_grapher.get_figure(), [], 1
 
-    event = trace['trace'][candidate_list_iterator]
+#     event = trace['trace'][candidate_list_iterator]
 
-    dialog = 0
+#     dialog = 0
 
-    if n_clicks > 0:
-        candidate_grapher.add_event(event=event, json_trace=trace)
-        div = html.Div(children='{}'.format(event))
-        candidate_list_iterator += 1
+#     if n_clicks > 0:
+#         candidate_grapher.add_event(event=event, json_trace=trace)
+#         div = html.Div(children='{}'.format(event))
+#         candidate_list_iterator += 1
 
-    return candidate_grapher.get_figure(), [div], dialog
+#     return candidate_grapher.get_figure(), [div], dialog
 
 
-# Iterator for event list
-process_list_iterator = 0
-@callback(
-    Output('process', 'figure'),
-    Output('process-log', 'children'),
-    [
-        Input('process-replay-button', 'n_clicks'),
-        Input('process-trace-selector', 'value'),
-        Input('process-selector', 'value'),
-    ],
-    prevent_initial_call=True
-)
-def update_process_figure(n_clicks, value, process):
+# # Iterator for event list
+# process_list_iterator = 0
+# @callback(
+#     Output('process', 'figure'),
+#     Output('process-log', 'children'),
+#     [
+#         Input('process-replay-button', 'n_clicks'),
+#         Input('process-trace-selector', 'value'),
+#         Input('process-selector', 'value'),
+#     ],
+#     prevent_initial_call=True
+# )
+# def update_process_figure(n_clicks, value, process):
 
-    global process_list_iterator
+#     global process_list_iterator
 
-    trace = candidate_traces["candidate_traces"][value]['trace']
-    print(value, process)
-    print(trace)
+#     trace = candidate_traces["candidate_traces"][value]['trace']
+#     print(value, process)
+#     print(trace)
 
-    process_trace = {
-        "trace": []
-    }
-    for event in trace:
-        try:
-            print(event)
-            if event['node_1'] == process or event['node_2'] == process:
-                process_trace['trace'].append(event)
-        except Exception as e:
-            print(e)
+#     process_trace = {
+#         "trace": []
+#     }
+#     for event in trace:
+#         try:
+#             print(event)
+#             if event['node_1'] == process or event['node_2'] == process:
+#                 process_trace['trace'].append(event)
+#         except Exception as e:
+#             print(e)
 
-    print(process_trace)
+#     print(process_trace)
 
-    event = process_trace['trace'][process_list_iterator]
+#     event = process_trace['trace'][process_list_iterator]
 
-    if n_clicks > 0:
-        process_grapher.add_event(event=event, json_trace=process_trace)
-        div = html.Div(children='{}'.format(event))
-        process_list_iterator += 1
+#     if n_clicks > 0:
+#         process_grapher.add_event(event=event, json_trace=process_trace)
+#         div = html.Div(children='{}'.format(event))
+#         process_list_iterator += 1
 
-    return process_grapher.get_figure(), [div]
+#     return process_grapher.get_figure(), [div]
 
-if __name__ == '__main__':
+# if __name__ == '__main__':
 
-    app.run_server()
+#     app.run_server()
